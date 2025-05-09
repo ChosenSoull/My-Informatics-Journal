@@ -1,0 +1,60 @@
+/* Сброс стандартных отступов и применение шрифта */
+html,
+body {
+    height: 100%;
+    margin: 0;
+    font-family: 'JekoDEMO-ExtraBold', sans-serif;
+}
+
+* {
+    font-weight: bold;
+
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    /* Safari */
+    -moz-user-select: none;
+    /* Firefox */
+    -ms-user-select: none;
+    /* IE 10+ */
+    user-select: none;
+    /* Стандарт */
+}
+
+/* Стили для светлой темы */
+[data-theme="light"] {
+  --background-color: #f9f9f9;
+  --text-color: #222;
+  --primary-color: #007bff;
+}
+
+/* Стили для темной темы */
+[data-theme="dark"] {
+  --background-color: #222;
+  --text-color: #f9f9f9;
+  --primary-color: #68a2ff;
+}
+
+/* Підключення шрифту */
+@font-face {
+  font-family: 'JekoDEMO-ExtraBold'; /* Ім'я шрифту */
+  src: url('../fonts/JekoDEMO-ExtraBold.otf') format('opentype'); /* Шлях до файлу шрифту */
+  font-weight: bold;
+  font-style: normal;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  margin: 0; /* Убедимся, что у app-container нет отступов */
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
