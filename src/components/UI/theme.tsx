@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, type ReactNode } from 'react';
-import updateFavicon from '../favicon'; // Импортируйте функцию updateFavicon
+import updateFavicon from '../favicon';
 
 // Типы для темы
 type Theme = 'light' | 'dark';
@@ -31,12 +31,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   };
 
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [isActive, setIsActive] = useState(true);
 
   // Функция для переключения темы
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    updateFavicon(newTheme); // Вызывайте updateFavicon при каждой смене темы
+    updateFavicon(isActive, newTheme); // передаем isActive
   };
 
   // Следим за изменениями настроек браузера
@@ -45,18 +46,30 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const handleChange = () => {
       const systemTheme = mediaQuery.matches ? 'dark' : 'light';
       setTheme(systemTheme);
-      updateFavicon(systemTheme); // И при изменении системных настроек
+      updateFavicon(isActive, systemTheme);
     };
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [isActive]);
 
   // Применяем класс темы к корневому элементу
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    updateFavicon(theme); // Вызывайте updateFavicon при начальной загрузке
-  }, [theme]);
+    updateFavicon(isActive, theme);
+  }, [theme, isActive]);
+
+  // Используем Page Visibility API для отслеживания активности страницы
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsActive(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
