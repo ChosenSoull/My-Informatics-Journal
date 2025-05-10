@@ -37,7 +37,7 @@ body {
 /* Підключення шрифту */
 @font-face {
   font-family: 'JekoDEMO-ExtraBold'; /* Ім'я шрифту */
-  src: url('../fonts/JekoDEMO-ExtraBold.otf') format('opentype'); /* Шлях до файлу шрифту */
+  src: url('/fonts/JekoDEMO-ExtraBold.otf') format('opentype'); /* Шлях до файлу шрифту */
   font-weight: bold;
   font-style: normal;
 }
