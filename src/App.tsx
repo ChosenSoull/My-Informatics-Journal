@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/UI/theme';
-import Error404 from './components/UI/Error/Error404UI';
+import Error404 from './components/UI/Error/Error404';
 import './App.css';
 
 

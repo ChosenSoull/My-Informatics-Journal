@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import './Error404UI.css';
+import './Error404.css';
 
 const Error404Page: React.FC = () => {
   const navigate = useNavigate();

@@ -57,17 +57,17 @@ const startDarkAnimation = (link: HTMLLinkElement) => {
     stopAnimation(); // Останавливаем предыдущую анимацию, если есть
     let index = 0;
     const darkFrames = [
-        'assets/anim_fav_dark/1.png',
-        'assets/anim_fav_dark/2.png',
-        'assets/anim_fav_dark/3.png',
-        'assets/anim_fav_dark/4.png',
-        'assets/anim_fav_dark/5.png',
-        'assets/anim_fav_dark/6.png',
-        'assets/anim_fav_dark/7.png',
-        'assets/anim_fav_dark/8.png',
-        'assets/anim_fav_dark/9.png',
-        'assets/anim_fav_dark/10.png',
-        'assets/anim_fav_dark/11.png'
+        'assets/anim_fav_light/1.png',
+        'assets/anim_fav_light/2.png',
+        'assets/anim_fav_light/3.png',
+        'assets/anim_fav_light/4.png',
+        'assets/anim_fav_light/5.png',
+        'assets/anim_fav_light/6.png',
+        'assets/anim_fav_light/7.png',
+        'assets/anim_fav_light/8.png',
+        'assets/anim_fav_light/9.png',
+        'assets/anim_fav_light/10.png',
+        'assets/anim_fav_light/11.png'
     ];
     link.type = 'image/png'; // Устанавливаем тип как png
     darkIntervalId = window.setInterval(() => {
