@@ -3,7 +3,6 @@ body {
     padding: 0;
     font-family: sans-serif;
     transition: background-color 0.3s ease, color 0.3s ease;
-    overflow: hidden;
 }
 
 .error-404-container {
@@ -36,7 +35,7 @@ body {
 }
 
 .error-404-button {
-    background-color: #0468d3;
+    background-color: #702a81;
     color: #ffffff;
     padding: 0.75rem 1.5rem;
     border-radius: 0.375rem;
@@ -48,7 +47,7 @@ body {
 
 .error-404-button:hover {
     
-    background-color: #007bff;
-    filter: drop-shadow(0 0 0.75rem #61dafbaa); /* Тень при наведении */
+    background-color: #803075;
+    filter: drop-shadow(0 0 0.75rem #803075); /* Тень при наведении */
 }
 

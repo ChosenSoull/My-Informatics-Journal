@@ -5,7 +5,7 @@ const iconCache: { [id: string]: string } = {}; // Кэш для base64 икон
 // Иконки с ID для анимации и статичных состояний
 const icons = {
   light: {
-    static: { id: 'light_static', url: 'assets/icon_light.png' },
+    static: { id: 'light_static', url: 'assets/icon-light.png' },
     animation: [
       { id: 'light_anim_1', url: 'assets/anim_fav_light/1.png' },
       { id: 'light_anim_2', url: 'assets/anim_fav_light/2.png' },
@@ -21,7 +21,7 @@ const icons = {
     ],
   },
   dark: {
-    static: { id: 'dark_static', url: 'assets/icon_dark.png' },
+    static: { id: 'dark_static', url: 'assets/icon-dark.png' },
     animation: [
       { id: 'dark_anim_1', url: 'assets/anim_fav_dark/1.png' },
       { id: 'dark_anim_2', url: 'assets/anim_fav_dark/2.png' },

@@ -6,7 +6,7 @@
     <meta name="description" content="Мій проєкт портфоліо з інформатики, де я ділюся тим, чому навчився протягом цього навчального року з програмування, алгоритмів та інших тем інформатики." />
     <meta name="keywords" content="проэкт,інформатика,сайт,портфоліо,дз,домашне завдання,project,computer science,website,dz,homework" />
     <meta name="theme-color" content="#000000" />
-    <link rel="icon" type="image/png" href="/assets/icon_dark.png" />
+    <link rel="icon" type="image/png" href="/assets/icon-dark.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/assets/icon_light-192x192.png" />
     <link rel="canonical" href="https://chosensoul.kesug.com/" />
@@ -17,7 +17,7 @@
     <script type="module" src="/src/main.tsx"></script>
     <!-- Google Analytics -->
     <script type="module">
-      const GA_TRACKING_ID = import.meta.env.GA_TRACKING_ID || 'G-XXXXXXXXXX'; // Фallback
+      const GA_TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID || 'G-XXXXXXXXXX';
 
       const script = document.createElement('script');
       script.async = true;
@@ -27,10 +27,16 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', GA_TRACKING_ID, { 
+
+      // Условная настройка debug_mode
+      const configOptions = {
         anonymize_ip: true,
-        debug_mode: window.location.hostname === 'localhost'
-      });
+      };
+      if (import.meta.env.DEV) { // Проверяем режим разработки через Vite
+        configOptions.debug_mode = true;
+      }
+
+      gtag('config', GA_TRACKING_ID, configOptions);
     </script>
   </body>
 </html>
