@@ -1,9 +1,11 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { ThemeContext } from '../theme'; // Подключаем ThemeContext
+import { ThemeContext } from '../theme';
 import './MainMenu.css';
+import Cropper, { type ReactCropperElement } from 'react-cropper';
+import 'cropperjs/dist/cropper.css';
 
 const MainMenu: React.FC = () => {
-  const { theme, toggleTheme } = useContext(ThemeContext); // Получаем тему и функцию переключения
+  const { theme, toggleTheme } = useContext(ThemeContext);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isChapterMenuOpen, setIsChapterMenuOpen] = useState(false);
   const [isScrollButtonVisible, setIsScrollButtonVisible] = useState(false);
@@ -14,18 +16,8 @@ const MainMenu: React.FC = () => {
   const [isUserLoggedIn] = useState(true);
 
   const testComments = [
-    {
-      id: 101,
-      avatar: '/assets/default_user_icon.png',
-      name: 'Читач 1',
-      message: 'Цікавий початок історії!',
-    },
-    {
-      id: 102,
-      avatar: '/assets/default_user_icon.png',
-      name: 'Програміст',
-      message: 'Пізнавально про перші кроки в програмуванні.',
-    },
+    { id: 101, avatar: '/assets/default_user_icon.png', name: 'Читач 1', message: 'Цікавий початок історії!' },
+    { id: 102, avatar: '/assets/default_user_icon.png', name: 'Програміст', message: 'Пізнавально про перші кроки в програмуванні.' },
   ];
 
   const chapters = [
@@ -38,7 +30,6 @@ const MainMenu: React.FC = () => {
     { id: 7, title: "Висновок: Мої підсумки та плани" },
   ];
 
-  // Функция, возвращающая объект с путями к активам в зависимости от темы
   const getThemeAssets = (currentTheme: string) => {
     const themeSuffix = currentTheme === 'light' ? '-dark' : '-light';
     return {
@@ -62,7 +53,6 @@ const MainMenu: React.FC = () => {
     };
   };
 
-  // Получаем объект с путями к активам при каждом изменении темы
   const themeAssets = getThemeAssets(theme);
 
   const scrollToChapter = (chapterId: number) => {
@@ -96,6 +86,10 @@ const MainMenu: React.FC = () => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsChapterMenuOpen(false);
       }
+      const accountSection = document.querySelector('.account-section');
+      if (accountSection && !accountSection.contains(event.target as Node)) {
+        setIsAccountOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -106,7 +100,78 @@ const MainMenu: React.FC = () => {
       const frameWidth = accountNameRef.current.offsetWidth + 60;
       document.documentElement.style.setProperty('--dynamic-frame-width', `${frameWidth}px`);
     }
-  }, [username]);
+  }, [username, isAccountOpen]);
+
+  // Стани для аватарки
+  const [isChangeAvatarModalOpen, setIsChangeAvatarModalOpen] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const cropperRef = useRef<ReactCropperElement>(null);
+  const [isCropperReady, setIsCropperReady] = useState(false);
+
+  // Обробники для аватарки
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAvatarFile(e.target.files[0]);
+      setIsCropperReady(false);
+      if (e.target) {
+        e.target.value = '';
+      }
+    } else {
+      setAvatarFile(null);
+      setIsCropperReady(false);
+    }
+  };
+
+  const handleAvatarCrop = async () => {
+    const cropperInstance = cropperRef.current?.cropper;
+    if (!cropperInstance || !isCropperReady) {
+      console.error('Cropper instance is not available or not ready.');
+      alert('Зачекайте, поки зображення завантажиться і буде готове до обрізки.');
+      return;
+    }
+
+    try {
+      cropperInstance.getCroppedCanvas({
+        width: 200,
+        height: 200,
+      }).toBlob(async (blob) => {
+        if (blob) {
+          const formData = new FormData();
+          formData.append('avatar', blob, 'avatar.png');
+          try {
+            const response = await fetch('/avatar.php', {
+              method: 'POST',
+              body: formData,
+            });
+            if (response.ok) {
+              console.log('Аватар успішно завантажено!');
+              setIsChangeAvatarModalOpen(false);
+              setAvatarFile(null);
+              setIsCropperReady(false);
+            } else {
+              console.error('Помилка завантаження аватара:', response.status, response.statusText);
+              alert(`Помилка завантаження аватара: ${response.statusText}`);
+            }
+          } catch (error) {
+            console.error('Помилка мережі під час завантаження:', error);
+            alert('Сталася мережева помилка під час завантаження аватара.');
+          }
+        } else {
+          console.error('Не вдалося отримати Blob з обрізаного зображення.');
+          alert('Не вдалося обробити зображення для завантаження.');
+        }
+      }, 'image/png', 0.9);
+    } catch (canvasError) {
+      console.error('Помилка при отриманні canvas з Cropper:', canvasError);
+      alert('Виникла помилка при обробці зображення.');
+    }
+  };
+
+  const handleCloseAvatarModal = () => {
+    setIsChangeAvatarModalOpen(false);
+    setAvatarFile(null);
+    setIsCropperReady(false);
+  };
 
   return (
     <div className="page-container">
@@ -126,7 +191,7 @@ const MainMenu: React.FC = () => {
             </div>
             <div className={`account-tooltip ${isAccountOpen ? 'active' : ''}`}>
               <div className="tooltip-item">Реєстрація</div>
-              <div className="tooltip-item">Змінити аватар</div>
+              <div className="tooltip-item" onClick={() => { setIsAccountOpen(false); setIsChangeAvatarModalOpen(true); }}>Змінити аватар</div>
               <div className="tooltip-item">Змінити ім'я</div>
               <div className="tooltip-item">Змінити пароль</div>
               <div className="tooltip-item">Вихід</div>
@@ -177,7 +242,6 @@ const MainMenu: React.FC = () => {
             </div>
           </div>
 
-          {/* Контент глав */}
           <div className="chapters-content">
             {chapters.map((chapter) => (
               <section key={chapter.id} id={`chapter-${chapter.id}`} className="chapter-section">
@@ -257,11 +321,9 @@ const MainMenu: React.FC = () => {
                 )}
               </section>
             ))}
-            {/* Контейнер для комментариев - теперь после всех глав */}
             {isUserLoggedIn && (
               <div className="comments-container">
                 <div className="comment-input-area">
-                  {/* Поле для ввода комментария (реализация будет позже) */}
                   <textarea placeholder="Залиште свій коментар..." className="comment-textarea"></textarea>
                   <button className="comment-button">Надіслати</button>
                 </div>
@@ -364,6 +426,52 @@ const MainMenu: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {isChangeAvatarModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseAvatarModal}>
+          <div className={`modal-content ${theme === 'light' ? 'modal-content-light' : 'modal-content-dark'}`} onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Змінити аватар</h3>
+            <label htmlFor="avatar-input" className="custom-file-button">
+              {avatarFile ? 'Вибрати інше зображення' : 'Вибрати зображення'}
+            </label>
+            <input
+              id="avatar-input"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="file-input"
+            />
+            {avatarFile && (
+              <div className="cropper-container">
+                <Cropper
+                  src={URL.createObjectURL(avatarFile)}
+                  className="cropper"
+                  aspectRatio={1}
+                  guides={true}
+                  ready={() => setIsCropperReady(true)}
+                  ref={cropperRef}
+                  viewMode={1}
+                  scalable={false}
+                  zoomable={false}
+                  zoomOnWheel={true}
+                />
+              </div>
+            )}
+            <div className="modal-actions">
+              <button
+                className="modal-button modal-button-save"
+                onClick={handleAvatarCrop}
+                disabled={!isCropperReady || !avatarFile}
+              >
+                Завантажити
+              </button>
+              <button className="modal-button modal-button-cancel" onClick={handleCloseAvatarModal}>
+                Скасувати
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
