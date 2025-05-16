@@ -1,24 +1,35 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { ThemeContext } from '../theme';
+import { useNavigate } from 'react-router-dom';
 import './MainMenu.css';
 import Cropper, { type ReactCropperElement } from 'react-cropper';
 import 'cropperjs/dist/cropper.css';
+import sanitizeHtml from 'sanitize-html';
+import { Registration_Path } from '../transition';
+
+
+interface Comment {
+  id: number;
+  avatar: string;
+  name: string;
+  message: string;
+}
 
 const MainMenu: React.FC = () => {
   const { theme, toggleTheme } = useContext(ThemeContext);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isChapterMenuOpen, setIsChapterMenuOpen] = useState(false);
   const [isScrollButtonVisible, setIsScrollButtonVisible] = useState(false);
-  const username = 'Користувач';
+  const [username, setUsername] = useState('Користувач');
   const accountNameRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState('assets/default_user_icon.png');
+  const [commentText, setCommentText] = useState('');
+  const [comments, setComments] = useState<Comment[]>([]);
 
-  const [isUserLoggedIn] = useState(true);
-
-  const testComments = [
-    { id: 101, avatar: '/assets/default_user_icon.png', name: 'Читач 1', message: 'Цікавий початок історії!' },
-    { id: 102, avatar: '/assets/default_user_icon.png', name: 'Програміст', message: 'Пізнавально про перші кроки в програмуванні.' },
-  ];
+  const navigate = useNavigate();
+  const handleRegistration = () => navigate(Registration_Path);
 
   const chapters = [
     { id: 1, title: "Вступ: Мій шлях у програмування" },
@@ -65,6 +76,33 @@ const MainMenu: React.FC = () => {
     setIsChapterMenuOpen(false);
   };
 
+  // Функція для завантаження інформації про користувача
+  const loadUserInfo = async () => {
+    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
+    if (!loginKey) return;
+
+    try {
+      const response = await fetch('/account-info.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loginKey }),
+      });
+      const data = await response.json();
+      if (response.ok && data.name && data.avatarsrc) {
+        setUsername(data.name);
+        setAvatarSrc(data.avatarsrc);
+        setIsUserLoggedIn(true);
+      }
+    } catch (error) {
+      console.error('Помилка при завантаженні інформації про користувача:', error);
+    }
+  };
+
+  // Виклик функції при завантаженні сторінки
+  useEffect(() => {
+    loadUserInfo();
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -102,9 +140,39 @@ const MainMenu: React.FC = () => {
     }
   }, [username, isAccountOpen]);
 
-  // Стани для аватарки
+  // Функція для оновлення коментарів
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const commentsSection = document.querySelector('.comments-container');
+      if (commentsSection) {
+        const rect = commentsSection.getBoundingClientRect();
+        const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+        if (isVisible) {
+          try {
+            const response = await fetch('/getcomments.php');
+            if (response.ok) {
+              const data = await response.json();
+              setComments(data);
+            }
+          } catch (error) {
+            console.error('Помилка при оновленні коментарів:', error);
+          }
+        }
+      }
+    }, 4000);
+  
+    return () => clearInterval(interval);
+  }, []);
+
+  // Стани для модальних вікон
   const [isChangeAvatarModalOpen, setIsChangeAvatarModalOpen] = useState(false);
+  const [isChangeUsernameModalOpen, setIsChangeUsernameModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [newUsername, setNewUsername] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const cropperRef = useRef<ReactCropperElement>(null);
   const [isCropperReady, setIsCropperReady] = useState(false);
 
@@ -113,9 +181,7 @@ const MainMenu: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       setAvatarFile(e.target.files[0]);
       setIsCropperReady(false);
-      if (e.target) {
-        e.target.value = '';
-      }
+      if (e.target) e.target.value = '';
     } else {
       setAvatarFile(null);
       setIsCropperReady(false);
@@ -130,6 +196,12 @@ const MainMenu: React.FC = () => {
       return;
     }
 
+    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
+    if (!loginKey) {
+      alert('Помилка авторизації. Перевірте login-key.');
+      return;
+    }
+
     try {
       cropperInstance.getCroppedCanvas({
         width: 200,
@@ -138,6 +210,7 @@ const MainMenu: React.FC = () => {
         if (blob) {
           const formData = new FormData();
           formData.append('avatar', blob, 'avatar.png');
+          formData.append('loginKey', loginKey);
           try {
             const response = await fetch('/avatar.php', {
               method: 'POST',
@@ -148,6 +221,7 @@ const MainMenu: React.FC = () => {
               setIsChangeAvatarModalOpen(false);
               setAvatarFile(null);
               setIsCropperReady(false);
+              setAvatarSrc('/avatar.php?loginKey=' + encodeURIComponent(loginKey));
             } else {
               console.error('Помилка завантаження аватара:', response.status, response.statusText);
               alert(`Помилка завантаження аватара: ${response.statusText}`);
@@ -173,6 +247,115 @@ const MainMenu: React.FC = () => {
     setIsCropperReady(false);
   };
 
+  // Обробник для "Змінити ім'я"
+  const handleChangeUsername = async () => {
+    if (!newUsername.trim()) {
+      alert('Будь ласка, введіть нове ім’я.');
+      return;
+    }
+    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
+    if (!loginKey) {
+      alert('Помилка авторизації. Перевірте login-key.');
+      return;
+    }
+    try {
+      const response = await fetch('/chname.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: newUsername, loginKey }),
+      });
+      if (response.ok) {
+        alert('Ім’я успішно змінено!');
+        setIsChangeUsernameModalOpen(false);
+        setNewUsername('');
+        setUsername(newUsername);
+      } else {
+        alert('Помилка при зміні імені.');
+      }
+    } catch (error) {
+      console.error('Помилка мережі:', error);
+      alert('Сталася мережева помилка.');
+    }
+  };
+
+  // Обробник для "Змінити пароль"
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert('Будь ласка, заповніть усі поля.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      alert('Нові паролі не збігаються.');
+      return;
+    }
+    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
+    if (!loginKey) {
+      alert('Помилка авторизації. Перевірте login-key.');
+      return;
+    }
+    try {
+      const response = await fetch('/chpassword.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword, loginKey }),
+      });
+      if (response.ok) {
+        alert('Пароль успішно змінено!');
+        setIsChangePasswordModalOpen(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        alert('Помилка при зміні пароля. Перевірте поточний пароль.');
+      }
+    } catch (error) {
+      console.error('Помилка мережі:', error);
+      alert('Сталася мережева помилка.');
+    }
+  };
+
+  // Обробник для "Вихід"
+  const handleLogout = () => {
+    localStorage.clear();
+    document.cookie.split(';').forEach((cookie) => {
+      document.cookie = cookie.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+    });
+    setIsUserLoggedIn(false);
+    setUsername('Користувач');
+    setAvatarSrc('assets/default_user_icon.png');
+    window.location.reload();
+  };
+
+  // Обробник для відправки коментаря
+  const handleCommentSubmit = async () => {
+    if (!commentText.trim()) {
+      alert('Будь ласка, введіть коментар.');
+      return;
+    }
+    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
+    if (!loginKey) {
+      alert('Помилка авторизації. Перевірте login-key.');
+      return;
+    }
+    const sanitizedComment = sanitizeHtml(commentText);
+    try {
+      const response = await fetch('/comment.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: sanitizedComment, loginKey }),
+      });
+      if (response.ok) {
+        alert('Коментар успішно відправлено!');
+        setCommentText('');
+      } else {
+        alert('Помилка при відправленні коментаря.');
+      }
+    } catch (error) {
+      console.error('Помилка мережі:', error);
+      alert('Сталася мережева помилка.');
+    }
+  };
+
   return (
     <div className="page-container">
       <header className="header">
@@ -187,14 +370,14 @@ const MainMenu: React.FC = () => {
           <div className={`account-section ${isAccountOpen ? 'active' : ''}`} onClick={() => setIsAccountOpen(!isAccountOpen)}>
             <div className={`account-frame ${isAccountOpen ? 'active' : ''}`}>
               <span ref={accountNameRef} className="account-name">{username}</span>
-              <img src="assets/default_user_icon.png" alt="Обліковий запис" className="account-icon" />
+              <img src={avatarSrc} alt="Обліковий запис" className="account-icon" />
             </div>
             <div className={`account-tooltip ${isAccountOpen ? 'active' : ''}`}>
-              <div className="tooltip-item">Реєстрація</div>
-              <div className="tooltip-item" onClick={() => { setIsAccountOpen(false); setIsChangeAvatarModalOpen(true); }}>Змінити аватар</div>
-              <div className="tooltip-item">Змінити ім'я</div>
-              <div className="tooltip-item">Змінити пароль</div>
-              <div className="tooltip-item">Вихід</div>
+              <div className="tooltip-item" onClick={handleRegistration}>Реєстрація</div>
+              <div className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`} onClick={() => { setIsAccountOpen(false); setIsChangeAvatarModalOpen(true); }}>Змінити аватар</div>
+              <div className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`} onClick={() => { setIsAccountOpen(false); setIsChangeUsernameModalOpen(true); }}>Змінити ім'я</div>
+              <div className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`} onClick={() => { setIsAccountOpen(false); setIsChangePasswordModalOpen(true); }}>Змінити пароль</div>
+              <div className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`} onClick={() => { setIsAccountOpen(false); handleLogout(); }}>Вихід</div>
             </div>
           </div>
         </div>
@@ -279,7 +462,7 @@ const MainMenu: React.FC = () => {
                 {chapter.id === 4 && (
                   <>
                     <p>
-                      Повернувшись у 2023 рік, я вирішив спробувати себе в ролі програміста. Мені подобалося створювати щось нове, і я вирішив, що програмування — це моє. У 7 класі я почав вивчати основи: спочатку розібрався, де й що використовується, а потім спробував себе в різних сферах. Але часу катастрофічно не вистачало: я вставав о 9 ранку, уроки тривали до 14:00, а потім ще було багато домашнього завдання.
+                      Повернувшись у 2023 рік, я вирішив спробувати себе в ролі програміста. Мені подобалося створювати щось нове, і я вирішив, що програмування — це моє. У 7 класі я почав вивчати основи: спочатку розібрався, де й що використовується, а потім спробував себе в різних сферах. Але часу катастрофично не вистачало: я вставав о 9 ранку, уроки тривали до 14:00, а потім ще було багато домашнього завдання.
                     </p>
                     <p>
                       У 2024 році я вирішив зосередитися тільки на інформатиці та математиці. Уроки проходили віддалено через Google Meet, і я, відкладавши телефон, читав книги з програмування. Тоді я вирішив вивчати веброзробку, доки не знайду те, що мені по-справжньому цікаво. У процесі я дізнався про рух Open Source, Git, GitHub, IDE та інші важливі терміни.
@@ -321,25 +504,32 @@ const MainMenu: React.FC = () => {
                 )}
               </section>
             ))}
-            {isUserLoggedIn && (
-              <div className="comments-container">
-                <div className="comment-input-area">
-                  <textarea placeholder="Залиште свій коментар..." className="comment-textarea"></textarea>
-                  <button className="comment-button">Надіслати</button>
-                </div>
-                <div className="comments-list">
-                  {testComments.map((comment) => (
-                    <div key={comment.id} className="comment">
-                      <img src={comment.avatar} alt={comment.name} className="comment-avatar" />
-                      <div className="comment-body">
-                        <span className="comment-name">{comment.name}</span>
-                        <p className="comment-message">{comment.message}</p>
-                      </div>
+            <div className="comments-container">
+              <div className="comments-list">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="comment">
+                    <img src={comment.avatar} alt={comment.name} className="comment-avatar" />
+                    <div className="comment-body">
+                      <span className="comment-name">{comment.name}</span>
+                      <p className="comment-message" dangerouslySetInnerHTML={{ __html: sanitizeHtml(comment.message) }}></p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            )}
+              {isUserLoggedIn ? (
+                <div className="comment-input-area">
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Залиште свій коментар..."
+                    className="comment-textarea"
+                  ></textarea>
+                  <button className="comment-button" onClick={handleCommentSubmit}>
+                    Надіслати
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </main>
@@ -390,7 +580,6 @@ const MainMenu: React.FC = () => {
             </div>
             <p className="social-label">Соціальні мережі</p>
           </div>
-
           <div className="tech-contact-section">
             <div className="tech-contact-wrapper">
               <div className="tech-section">
@@ -429,18 +618,12 @@ const MainMenu: React.FC = () => {
 
       {isChangeAvatarModalOpen && (
         <div className="modal-overlay" onClick={handleCloseAvatarModal}>
-          <div className={`modal-content ${theme === 'light' ? 'modal-content-light' : 'modal-content-dark'}`} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Змінити аватар</h3>
             <label htmlFor="avatar-input" className="custom-file-button">
               {avatarFile ? 'Вибрати інше зображення' : 'Вибрати зображення'}
             </label>
-            <input
-              id="avatar-input"
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="file-input"
-            />
+            <input id="avatar-input" type="file" accept="image/*" onChange={handleAvatarChange} className="file-input" />
             {avatarFile && (
               <div className="cropper-container">
                 <Cropper
@@ -458,15 +641,75 @@ const MainMenu: React.FC = () => {
               </div>
             )}
             <div className="modal-actions">
-              <button
-                className="modal-button modal-button-save"
-                onClick={handleAvatarCrop}
-                disabled={!isCropperReady || !avatarFile}
-              >
+              <button className="modal-button modal-button-save" onClick={handleAvatarCrop} disabled={!isCropperReady || !avatarFile}>
                 Завантажити
               </button>
               <button className="modal-button modal-button-cancel" onClick={handleCloseAvatarModal}>
                 Скасувати
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isChangeUsernameModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsChangeUsernameModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Змінити ім’я</h3>
+            <div className="modal-input-container">
+              <input
+                type="text"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="Нове ім’я"
+                className="modal-input"
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="modal-button modal-button-save" onClick={handleChangeUsername}>
+                Змінити ім’я
+              </button>
+              <button className="modal-button modal-button-cancel" onClick={() => setIsChangeUsernameModalOpen(false)}>
+                Відклонити
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isChangePasswordModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsChangePasswordModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Змінити пароль</h3>
+            <div className="modal-password-fields">
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Поточний пароль"
+                className="modal-input"
+              />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Новий пароль"
+                className="modal-input"
+              />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Повторити пароль"
+                className="modal-input"
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="modal-button modal-button-save" onClick={handleChangePassword}>
+                Змінити пароль
+              </button>
+              <button className="modal-button modal-button-cancel" onClick={() => setIsChangePasswordModalOpen(false)}>
+                Відклонити
               </button>
             </div>
           </div>

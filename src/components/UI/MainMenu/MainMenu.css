@@ -579,6 +579,8 @@
     border-radius: 40px;
     border: 2px solid var(--text-input-border); /* Белая обводка */
     background-color: transparent; /* Прозрачный фон */
+    min-height: 350px;
+    max-height: 350px;
   }
 
   /* Стили для области ввода комментария */
@@ -709,165 +711,167 @@
     background-color: #555;
   }
 
+  .tooltip-item.hidden {
+    display: none;
+  }
 
+  /* Модальне вікно з фоном */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Прозорий темний фон */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
 
-
-
-
-
-/* Модальне вікно з фоном */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Прозорий темний фон */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-/* Контейнер вмісту модального вікна */
-.modal-content {
-  background-color: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px; /* Зменшено з 500px до 400px для кращого розміщення */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  position: relative;
-  overflow-y: auto; /* Дозволяє прокрутку, якщо вміст перевищує висоту */
-  max-height: 80vh; /* Обмежуємо висоту, щоб не виходити за екран */
-}
-
-.modal-content-light {
-  background-color: #f9f9f9;
-  color: #333;
-}
-
-.modal-content-dark {
-  background-color: #2d2d2d;
-  color: #e0e0e0;
-}
-
-/* Заголовок модального вікна */
-.modal-title {
-  font-size: 1.3rem; /* Зменшено з 1.5rem для компактності */
-  font-weight: bold;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-/* Кнопка вибору файлу */
-.custom-file-button {
-  display: inline-block;
-  padding: 8px 16px; /* Зменшено padding */
-  background-color: #6b46c1;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem; /* Зменшено шрифт */
-  text-align: center;
-  margin-bottom: 10px;
-  justify-content: center;
-  display: flex;
-}
-
-.custom-file-button:hover {
-  background-color: #5a36a4;
-}
-
-/* Прихований файловий інпут */
-.file-input {
-  display: none;
-}
-
-/* Контейнер для Cropper */
-.cropper-container {
-  max-height: 250px; /* Зменшено з 300px для кращого розміщення */
-  overflow: hidden; /* Забороняємо прокрутку зображення */
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.cropper {
-  width: 100% !important;
-  height: 100% !important;
-  max-height: 250px; /* Синхронізовано з cropper-container */
-}
-
-/* Контейнер для кнопок */
-.modal-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 15px; /* Зменшено з 20px */
-  gap: 10px; /* Додано відступ між кнопками */
-}
-
-/* Кнопки модального вікна */
-.modal-button {
-  padding: 8px 15px; /* Зменшено padding */
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem; /* Зменшено шрифт */
-  transition: background-color 0.3s;
-  flex: 1; /* Кнопки займають рівний простір */
-}
-
-.modal-button-save {
-  background-color: #6b46c1;
-  color: #fff;
-}
-
-.modal-button-save:hover {
-  background-color: #5a36a4;
-}
-
-.modal-button-cancel {
-  background-color: #e0e0e0;
-  color: #333;
-}
-
-.modal-button-cancel:hover {
-  background-color: #ccc;
-}
-
-/* Адаптивність */
-@media (max-width: 600px) {
+  /* Контейнер вмісту модального вікна */
   .modal-content {
-    width: 95%;
-    padding: 10px;
-    max-height: 75vh; /* Додатково зменшуємо висоту на малих екранах */
+    background-color: var(--background-color);
+    padding: 15px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow-y: auto;
+    max-height: 80vh;
+    color: var(--text-color);
   }
 
+  /* Заголовок модального вікна */
   .modal-title {
-    font-size: 1.1rem;
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+    color: var(--text-color);
   }
 
-  .modal-button {
-    padding: 6px 12px;
-    font-size: 0.85rem;
+  /* Кнопка вибору файлу */
+  .custom-file-button {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--text-input-border);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 10px;
+    justify-content: center;
+    display: flex;
+    transition: transform 0.3s ease,filter 0.3s ease;
   }
 
+  .custom-file-button:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 3rem #850085);
+  }
+
+  /* Прихований файловий інпут */
+  .file-input {
+    display: none;
+  }
+
+  /* Контейнер для Cropper */
   .cropper-container {
-    max-height: 180px; /* Ще більше зменшуємо на малих екранах */
+    max-height: 250px;
+    overflow: hidden;
+    border: 1px solid var(--text-input-border);
+    border-radius: 4px;
   }
-}
 
-/* Темна тема для елементів Cropper */
-.cropper-container .cropper-view-box,
-.cropper-container .cropper-face {
-  border-color: #e0e0e0 !important;
-}
+  .cropper {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 250px;
+  }
 
-.cropper-container .cropper-line,
-.cropper-container .cropper-point {
-  background-color: #e0e0e0 !important;
-}
+  /* Контейнер для кнопок */
+  .modal-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+    gap: 10px;
+  }
+
+  /* Кнопки модального вікна */
+  .modal-button {
+    padding: 8px 15px;
+    border: 2px solid var(--text-color);
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+    flex: 1;
+    background-color: transparent;
+    color: var(--text-color);
+    transition: transform 0.3s ease,filter 0.3s ease;
+
+  }
+
+  .modal-button-save:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 3rem #850085);
+  }
+
+  .modal-button-cancel:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 3rem #850085);
+  }
+
+  /* Темна тема для елементів Cropper */
+  .cropper-container .cropper-view-box,
+  .cropper-container .cropper-face {
+    border-color: var(--text-color) !important;
+  }
+
+  .cropper-container .cropper-line,
+  .cropper-container .cropper-point {
+    background-color: var(--text-color) !important;
+  }
+
+  /* Нові стилі для контейнера поля введення */
+  .modal-input-container {
+    margin-bottom: 10px;
+    width: 100%;
+  }
+
+  .modal-input {
+    padding: 8px;
+    border: 2px solid var(--text-input-border);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: transparent;
+    margin-bottom: 4px;
+    transition: border-color 0.3s ease;
+    color: var(--text-color);
+  }
+
+  .modal-input:focus {
+    outline: none;
+    border-color: var(--comment-button-color);
+    box-shadow: 0 0 5px rgba(107, 70, 193, 0.5);
+  }
+
+  /* Стилі для кнопок */
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+
+
+
 
 
 /* Мобильная версия */

@@ -51,12 +51,11 @@ body {
   --text-input-background: #470077;
   --text-input-border: #000000;
   --comment-border: #000000;
-  /* Registration */
+  /* Registration Login and Forgot-Password*/
   --input-border: #000000;
   --google-button-border: #000000;
   --register-border: #000000;
   --registration-background-color: #e6e6e6;
-  
 }
 
 /* Стили для темной темы */

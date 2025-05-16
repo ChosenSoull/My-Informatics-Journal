@@ -84,6 +84,7 @@ h2 {
   text-align: center;
   margin-bottom: 30px;
   font-size: 3rem;
+  color: var(--text-color);
 }
 
 /* Кнопка Google */
@@ -172,6 +173,52 @@ h2 {
 }
 
 .register-button:hover {
+  background-color: #444444;
+  transform: scale(1.1);
+}
+
+.code-container {
+  text-align: center;
+}
+
+.code-container p {
+  margin-bottom: 20px;
+  color: var(--text-color);
+}
+
+.code-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.code-input {
+  width: 4.5rem;
+  height: 4.5rem;
+  text-align: center;
+  font-size: 2rem;
+  background-color: transparent;
+  border: 2px solid var(--text-color);
+  border-radius: 25px;
+  color:var(--text-color);
+  outline: none;
+}
+
+.verify-button {
+  width: 100%;
+  padding: 10px;
+  background-color: transparent;
+  color: var(--text-color);
+  border: 2px solid var(--register-border);
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+  transform: scale(1.0);
+}
+
+.verify-button:hover {
   background-color: #444444;
   transform: scale(1.1);
 }

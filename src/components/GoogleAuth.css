@@ -1,0 +1,69 @@
+.google-auth-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .google-user-info {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .profile-picture {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+    position: relative;
+    width: 100%;
+  }
+  
+  .input-field {
+    width: 95%;
+    padding: 10px;
+    border: 2px solid var(--input-border, #ccc);
+    border-radius: 15px;
+    font-size: 16px;
+    background-color: inherit;
+    color: inherit;
+    transition: transform 0.3s ease;
+    transform: scale(1.0);
+  }
+  
+  .input-field:focus {
+    outline: none;
+    transform: scale(1.05);
+  }
+  
+  .error-message {
+    color: #d9534f;
+    font-size: 14px;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  
+  .submit-button {
+    width: 100%;
+    padding: 10px;
+    background-color: transparent;
+    color: var(--text-color, #333);
+    border: 2px solid var(--register-border, #4CAF50);
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    transform: scale(1.0);
+  }
+  
+  .submit-button:hover {
+    background-color: var(--register-hover-bg, #45a049);
+    transform: scale(1.1);
+    color: white;
+  }
