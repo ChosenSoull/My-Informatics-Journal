@@ -1,9 +1,18 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { ThemeContext } from '../theme';
+import { useGoogleLogin } from '@react-oauth/google';
+import { useNavigate } from 'react-router-dom'; // Додаємо імпорт useNavigate
 import './Registration.css';
+
+interface GoogleUser {
+  name: string;
+  email: string;
+  picture: string;
+}
 
 const Registration: React.FC = () => {
   const { theme } = useContext(ThemeContext);
+  const navigate = useNavigate(); // Ініціалізуємо useNavigate
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -13,6 +22,10 @@ const Registration: React.FC = () => {
   const [passwordStrength, setPasswordStrength] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isCodeStage, setIsCodeStage] = useState(false);
+  const [error, setError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
+  const [googlePassword, setGooglePassword] = useState('');
 
   const checkPasswordStrength = (pass: string) => {
     if (pass.length === 0) return '';
@@ -24,7 +37,7 @@ const Registration: React.FC = () => {
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.slice(0, 20); // Обмеження до 20 символів
+    const value = e.target.value.slice(0, 20);
     setName(value);
   };
 
@@ -34,7 +47,7 @@ const Registration: React.FC = () => {
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newPassword = e.target.value.slice(0, 50); // Обмеження до 50 символів
+    const newPassword = e.target.value.slice(0, 50);
     setPassword(newPassword);
     setPasswordStrength(checkPasswordStrength(newPassword));
   };
@@ -83,25 +96,25 @@ const Registration: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.status === 'ok') {
-          setIsCodeStage(true); // Переходимо до екрану введення коду
+          setIsCodeStage(true);
         } else {
-          alert('Помилка на сервері: ' + (data.message || 'Спробуйте ще раз'));
+          setError('Помилка на сервері: ' + (data.message || 'Спробуйте ще раз'));
         }
       } else {
-        alert('Помилка при відправці даних на сервер');
+        setError('Помилка при відправці даних на сервер');
       }
     } catch (error) {
       console.error('Помилка мережі:', error);
-      alert('Сталася мережева помилка');
+      setError('Сталася мережева помилка');
     }
   };
 
   const handleCodeChange = (index: number, value: string) => {
     const newCode = [...code];
-    newCode[index] = value.slice(0, 1); // Обмежуємо до 1 символа
+    newCode[index] = value.slice(0, 1);
     setCode(newCode);
+    setError('');
 
-    // Перехід до наступного поля
     if (value && index < 5) {
       const nextInput = document.getElementById(`code-input-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -120,20 +133,115 @@ const Registration: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.status === 'verified') {
-            alert('Реєстрація завершена! Перейдіть до входу.');
-            // Тут можна перенаправити на сторінку входу, наприклад, window.location.href = '/login';
+            const loginKey = document.cookie.match(/login-key=[^;]+/);
+            if (loginKey) {
+              navigate('/'); // Замінюємо window.location.href на navigate
+            } else {
+              throw new Error('Куки login-key не отримані');
+            }
           } else {
-            alert('Невірний код підтвердження');
+            throw new Error('Невірний код підтвердження');
           }
+        } else {
+          throw new Error('Помилка сервера при перевірці коду');
         }
-      } catch (error) {
-        console.error('Помилка при перевірці коду:', error);
-        alert('Сталася помилка при перевірці коду');
+      } catch (error: any) {
+        setError(error.message);
+        setCode(['', '', '', '', '', '']);
       }
     } else {
-      alert('Введіть 6-значний код');
+      setError('Введіть 6-значний код');
     }
   };
+
+  const handleResendCode = async () => {
+    try {
+      const response = await fetch('/resend-code.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (response.ok) {
+        setResendCooldown(30);
+        setError('');
+        setCode(['', '', '', '', '', '']);
+      } else {
+        setError('Не вдалося надіслати код повторно');
+      }
+    } catch (error) {
+      setError('Сталася помилка при повторному надсиланні');
+      console.error('Помилка при повторному надсиланні:', error);
+    }
+  };
+
+  const handleGoogleSubmit = async () => {
+    if (!googleUser) {
+      setError('Спочатку увійдіть через Google');
+      return;
+    }
+    if (!googlePassword) {
+      setError('Введіть пароль');
+      return;
+    }
+
+    try {
+      const response = await fetch('/google-auth.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: googleUser.name,
+          email: googleUser.email,
+          picture: googleUser.picture,
+          password: googlePassword,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 'ok') {
+          navigate('/'); // Замінюємо window.location.href на navigate
+        } else {
+          setError('Помилка на сервері: ' + (data.message || 'Спробуйте ще раз'));
+        }
+      } else {
+        setError('Помилка при відправці даних на сервер');
+      }
+    } catch (error) {
+      console.error('Помилка мережі:', error);
+      setError('Сталася мережева помилка');
+    }
+  };
+
+  const login = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokenResponse.access_token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((userInfo: GoogleUser) => {
+          setGoogleUser(userInfo);
+          setError('');
+        })
+        .catch((error) => {
+          setError('Помилка при отриманні даних користувача');
+          console.error('Помилка:', error);
+        });
+    },
+    onError: () => {
+      setError('Помилка авторизації через Google');
+    },
+    scope: 'profile email',
+  });
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resendCooldown]);
 
   return (
     <div className="container-registration" style={{ backgroundImage: `url('${containerBackground}')` }}>
@@ -142,63 +250,102 @@ const Registration: React.FC = () => {
           {!isCodeStage ? (
             <>
               <h2>Реєстрація</h2>
-              <button className="google-login">
-                <img
-                  src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
-                  alt="Google icon"
-                  className="google-icon"
-                />
-                Увійти за допомогою Google
-              </button>
-              <div className="form-group">
-                <input
-                  type="email"
-                  placeholder="Електронна пошта"
-                  value={email}
-                  onChange={handleEmailChange}
-                  className="input-field"
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="text"
-                  placeholder="Ім'я"
-                  value={name}
-                  onChange={handleNameChange}
-                  className="input-field"
-                  maxLength={20} // Додаткове обмеження через HTML
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Пароль"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  className="input-field"
-                  maxLength={50} // Додаткове обмеження через HTML
-                />
-                {password.length > 0 && (
+              <div className="google-auth-container">
+                <button className="google-login" onClick={() => login()}>
                   <img
-                    src={passwordIconSrc}
-                    alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
-                    className="password-toggle"
-                    onClick={togglePasswordVisibility}
+                    src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
+                    alt="Google icon"
+                    className="google-icon"
                   />
+                  Реєстрація за допомогою Google
+                </button>
+                {googleUser && (
+                  <div className="google-user-info">
+                    <img src={googleUser.picture} alt="Profile" className="profile-picture" />
+                    <p>Ім'я: {googleUser.name}</p>
+                    <p>Email: {googleUser.email}</p>
+                    <div className="form-group">
+                      <input
+                        type="password"
+                        placeholder="Введіть пароль для акаунта"
+                        value={googlePassword}
+                        onChange={(e) => setGooglePassword(e.target.value)}
+                        className="input-field"
+                      />
+                    </div>
+                    {error && <div className="error-message">{error}</div>}
+                    <button className="register-button" onClick={handleGoogleSubmit}>
+                      Продовжити
+                    </button>
+                  </div>
                 )}
-                {password.length > 0 && <span className="password-strength">{passwordStrength}</span>}
               </div>
-              <div className="form-group">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Повторити пароль"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input-field"
-                  maxLength={50} // Додаткове обмеження через HTML
-                />
+              {!googleUser && (
+                <>
+                  <div className="form-group">
+                    <input
+                      type="email"
+                      placeholder="Електронна пошта"
+                      value={email}
+                      onChange={handleEmailChange}
+                      className="input-field"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <input
+                      type="text"
+                      placeholder="Ім'я"
+                      value={name}
+                      onChange={handleNameChange}
+                      className="input-field"
+                      maxLength={20}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Пароль"
+                      value={password}
+                      onChange={handlePasswordChange}
+                      className="input-field"
+                      maxLength={50}
+                    />
+                    {password.length > 0 && (
+                      <img
+                        src={passwordIconSrc}
+                        alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                        className="password-toggle"
+                        onClick={togglePasswordVisibility}
+                      />
+                    )}
+                    {password.length > 0 && <span className="password-strength">{passwordStrength}</span>}
+                  </div>
+                  <div className="form-group">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Повторити пароль"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="input-field"
+                      maxLength={50}
+                    />
+                  </div>
+                </>
+              )}
+              {error && !googleUser && <div className="error-message">{error}</div>}
+              {!googleUser && (
+                <button className="register-button" onClick={handleRegister}>
+                  Зареєструватися
+                </button>
+              )}
+              <div className="navigation-links">
+                <span onClick={() => navigate('/login')} className="navigation-link">
+                  Вхід
+                </span>
+                <span onClick={() => navigate('/forgot-password')} className="navigation-link">
+                  Забули пароль?
+                </span>
               </div>
-              <button className="register-button" onClick={handleRegister}>Зареєструватися</button>
             </>
           ) : (
             <div className="code-container">
@@ -218,7 +365,19 @@ const Registration: React.FC = () => {
                   />
                 ))}
               </div>
-              <button className="verify-button" onClick={handleCodeSubmit}>Підтвердити</button>
+              {error && <div className="error-message">{error}</div>}
+              <button className="verify-button" onClick={handleCodeSubmit}>
+                Підтвердити
+              </button>
+              <button
+                className="resend-button"
+                onClick={handleResendCode}
+                disabled={resendCooldown > 0}
+              >
+                {resendCooldown > 0
+                  ? `Надіслати повторно через ${resendCooldown} сек`
+                  : 'Надіслати код повторно'}
+              </button>
             </div>
           )}
         </div>

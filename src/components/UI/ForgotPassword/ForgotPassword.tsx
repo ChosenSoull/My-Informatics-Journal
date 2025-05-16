@@ -1,37 +1,411 @@
-import React, { useState, useContext } from 'react';
-import { ThemeContext } from '../theme'; // Убедись, что путь к ThemeContext верен
+import React, { useState, useContext, useEffect } from 'react';
+import { ThemeContext } from '../theme';
+import { useGoogleLogin } from '@react-oauth/google';
+import { useNavigate } from 'react-router-dom';
 import './ForgotPassword.css';
 
+interface GoogleUser {
+  email: string;
+}
+
 const ForgotPassword: React.FC = () => {
-  // Получаем текущую тему из контекста
   const { theme } = useContext(ThemeContext);
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [isCodeStage, setIsCodeStage] = useState(false);
+  const [isPasswordStage, setIsPasswordStage] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const passwordIconSrc = showPassword
+    ? theme === 'light' ? '/assets/view-dark.png' : '/assets/view-light.png'
+    : theme === 'light' ? '/assets/hide-dark.png' : '/assets/hide-light.png';
 
   const containerBackground = theme === 'light'
-    ? '/assets/page-bg-light.png' // Путь для светлой темы
-    : '/assets/page-bg-dark.png'; // Путь для темной темы
+    ? '/assets/page-bg-light.png'
+    : '/assets/page-bg-dark.png';
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Електронна пошта повинна бути заповнена!');
+      return;
+    }
+
+    try {
+      const response = await fetch('/forgot-pass.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        if (data.status === 'ok') {
+          setIsCodeStage(true);
+        } else {
+          setError(data.message || 'Помилка відправки');
+        }
+      } else {
+        setError('Немає зв’язку з сервером');
+      }
+    } catch (error) {
+      setError('Немає зв’язку з сервером');
+      console.error('Помилка мережі:', error);
+    }
+  };
+
+  const handleCodeChange = (index: number, value: string) => {
+    const newCode = [...code];
+    newCode[index] = value.slice(0, 1);
+    setCode(newCode);
+    setError('');
+
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`code-input-${index + 1}`);
+      if (nextInput) nextInput.focus();
+    }
+  };
+
+  const handleCodeSubmit = async () => {
+    const codeString = code.join('');
+    if (codeString.length === 6) {
+      try {
+        const response = await fetch('/verify.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code: codeString }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'verified') {
+            setIsCodeStage(false);
+            setIsPasswordStage(true);
+          } else {
+            setError('Невірний код підтвердження');
+          }
+        } else {
+          setError('Немає зв’язку з сервером');
+        }
+      } catch (error) {
+        setError('Немає зв’язку з сервером');
+        console.error('Помилка мережі:', error);
+      }
+    } else {
+      setError('Введіть 6-значний код');
+    }
+  };
+
+  const handleResendCode = async () => {
+    try {
+      const response = await fetch('/resend-code.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (response.ok) {
+        setResendCooldown(30);
+        setError('');
+        setCode(['', '', '', '', '', '']);
+      } else {
+        setError('Не вдалося надіслати код повторно');
+      }
+    } catch (error) {
+      setError('Немає зв’язку з сервером');
+      console.error('Помилка при повторному надсиланні:', error);
+    }
+  };
+
+  const handlePasswordSubmit = async () => {
+    if (!newPassword || !confirmNewPassword) {
+      setError('Усі поля повинні бути заповнені!');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError('Паролі не збігаються!');
+      return;
+    }
+    if (newPassword.length > 50) {
+      setError('Пароль не може перевищувати 50 символів!');
+      return;
+    }
+
+    try {
+      const response = await fetch('/update-password.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, newPassword }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 'ok') {
+          navigate('/'); // Перенаправлення після успішної зміни пароля
+        } else {
+          setError(data.message || 'Помилка оновлення пароля');
+        }
+      } else {
+        setError('Немає зв’язку з сервером');
+      }
+    } catch (error) {
+      setError('Немає зв’язку з сервером');
+      console.error('Помилка мережі:', error);
+    }
+  };
+
+  const handleGoogleForgotPassword = async () => {
+    if (!googleUser) {
+      setError('Спочатку увійдіть через Google');
+      return;
+    }
+
+    try {
+      const response = await fetch('/google-forgot-pass.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: googleUser.email }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        if (data.status === 'ok') {
+          setIsCodeStage(true);
+        } else {
+          setError(data.message || 'Помилка відправки');
+        }
+      } else {
+        setError('Немає зв’язку з сервером');
+      }
+    } catch (error) {
+      setError('Немає зв’язку з сервером');
+      console.error('Помилка мережі:', error);
+    }
+  };
+
+  const login = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokenResponse.access_token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((userInfo: GoogleUser) => {
+          setGoogleUser(userInfo);
+          setEmail(userInfo.email);
+          setError('');
+        })
+        .catch((error) => {
+          setError('Помилка при отриманні даних користувача');
+          console.error('Помилка:', error);
+        });
+    },
+    onError: () => {
+      setError('Помилка авторизації через Google');
+    },
+    scope: 'email',
+  });
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resendCooldown]);
 
   return (
-    <div className="container-ForgotPassword" style={{backgroundImage: `url('${containerBackground}')`}}>
+    <div className="container-ForgotPassword" style={{ backgroundImage: `url('${containerBackground}')` }}>
       <div className="position-container-ForgotPassword">
         <div className="form-container-ForgotPassword">
           <h2>Відновлення пароля</h2>
-          {/* Кнопка Google */}
-          <button className="google-ForgotPassword">
-            <img src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'} alt="Google icon" className="google-icon"/>
+          <button className="google-ForgotPassword" onClick={() => login()}>
+            <img
+              src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
+              alt="Google icon"
+              className="google-icon"
+            />
             Відновити за допомогою Google
           </button>
-          <div className="form-group">
-            <input
-              type="email"
-              placeholder="Електронна пошта"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input-field"
-            />
-          </div>
-          <button className="ForgotPassword-button">Надіслати посилання</button>
+          {googleUser ? (
+            <div className="google-user-info">
+              {isCodeStage ? (
+                <div className="code-container">
+                  <h2>Підтвердження коду</h2>
+                  <p>Введіть 6-значний код, відправлений на {googleUser.email}</p>
+                  <div className="code-inputs">
+                    {code.map((digit, index) => (
+                      <input
+                        key={index}
+                        id={`code-input-${index}`}
+                        type="text"
+                        value={digit}
+                        onChange={(e) => handleCodeChange(index, e.target.value)}
+                        className="code-input"
+                        maxLength={1}
+                        autoFocus={index === 0}
+                      />
+                    ))}
+                  </div>
+                  {error && <div className="error-message">{error}</div>}
+                  <button className="verify-button" onClick={handleCodeSubmit}>
+                    Підтвердити
+                  </button>
+                  <button
+                    className="resend-button"
+                    onClick={handleResendCode}
+                    disabled={resendCooldown > 0}
+                  >
+                    {resendCooldown > 0
+                      ? `Надіслати повторно через ${resendCooldown} сек`
+                      : 'Надіслати код повторно'}
+                  </button>
+                </div>
+              ) : isPasswordStage ? (
+                <div className="password-container">
+                  <div className="form-group">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Новий пароль"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="input-field"
+                    />
+                    {newPassword.length > 0 && (
+                      <img
+                        src={passwordIconSrc}
+                        alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                        className="password-toggle"
+                        onClick={togglePasswordVisibility}
+                      />
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Повторити новий пароль"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
+                  {error && <div className="error-message">{error}</div>}
+                  <button className="ForgotPassword-button" onClick={handlePasswordSubmit}>
+                    Зберегти
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {error && <div className="error-message">{error}</div>}
+                  <button className="ForgotPassword-button" onClick={handleGoogleForgotPassword}>
+                    Надіслати код
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              {!isCodeStage && !isPasswordStage && (
+                <div className="form-group">
+                  <input
+                    type="email"
+                    placeholder="Електронна пошта"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+              )}
+              {error && <div className="error-message">{error}</div>}
+              {!isCodeStage && !isPasswordStage && (
+                <button className="ForgotPassword-button" onClick={handleForgotPassword}>
+                  Надіслати посилання
+                </button>
+              )}
+              <div className="navigation-links">
+                <span onClick={() => navigate('/registration')} className="navigation-link">
+                  Реєстрація
+                </span>
+                <span onClick={() => navigate('/login')} className="navigation-link">
+                  Вхід
+                </span>
+              </div>
+              {isCodeStage && (
+                <div className="code-container">
+                  <h2>Підтвердження коду</h2>
+                  <p>Введіть 6-значний код, відправлений на {email}</p>
+                  <div className="code-inputs">
+                    {code.map((digit, index) => (
+                      <input
+                        key={index}
+                        id={`code-input-${index}`}
+                        type="text"
+                        value={digit}
+                        onChange={(e) => handleCodeChange(index, e.target.value)}
+                        className="code-input"
+                        maxLength={1}
+                        autoFocus={index === 0}
+                      />
+                    ))}
+                  </div>
+                  {error && <div className="error-message">{error}</div>}
+                  <button className="verify-button" onClick={handleCodeSubmit}>
+                    Підтвердити
+                  </button>
+                  <button
+                    className="resend-button"
+                    onClick={handleResendCode}
+                    disabled={resendCooldown > 0}
+                  >
+                    {resendCooldown > 0
+                      ? `Надіслати повторно через ${resendCooldown} сек`
+                      : 'Надіслати код повторно'}
+                  </button>
+                </div>
+              )}
+              {isPasswordStage && (
+                <div className="password-container">
+                  <div className="form-group">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Новий пароль"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="input-field"
+                    />
+                    {newPassword.length > 0 && (
+                      <img
+                        src={passwordIconSrc}
+                        alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                        className="password-toggle"
+                        onClick={togglePasswordVisibility}
+                      />
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Повторити новий пароль"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
+                  {error && <div className="error-message">{error}</div>}
+                  <button className="ForgotPassword-button" onClick={handlePasswordSubmit}>
+                    Зберегти
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

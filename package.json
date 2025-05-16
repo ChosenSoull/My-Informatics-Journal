@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.2",
+    "@types/jwt-decode": "^2.2.1",
     "dotenv": "^16.5.0",
     "framer-motion": "^12.10.5",
+    "jwt-decode": "^4.0.0",
     "my-ui-lib": "^1.2.2",
     "react": "^19.1.0",
     "react-cropper": "^2.3.3",
