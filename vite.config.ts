@@ -37,6 +37,7 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         manifest: manifest,
         workbox: {
+          maximumFileSizeToCacheInBytes: 10485760,
           globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2}'],
           runtimeCaching: [
             {
