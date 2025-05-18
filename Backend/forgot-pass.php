@@ -34,10 +34,10 @@ if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit();
 }
 
-$encryptedEmail = encryptData($email);
+$hashedEmail = hashData($email);
 
 $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
-$stmt->bind_param('s', $encryptedEmail);
+$stmt->bind_param('s', $hashedEmail);
 $stmt->execute();
 if ($stmt->get_result()->num_rows === 0) {
     echo json_encode(['status' => 'error', 'message' => 'Користувача не знайдено']);

@@ -190,68 +190,67 @@ const Login: React.FC = () => {
     <div className="container-login" style={{ backgroundImage: `url('${containerBackground}')` }}>
       <div className="position-container-login">
         <div className="form-container-login">
-          <h2>Вхід</h2>
-          <button className="google-login_login" onClick={() => login()}>
-            <img
-              src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
-              alt="Google icon"
-              className="google-icon"
-            />
-            Увійти за допомогою Google
-          </button>
-          {googleUser ? (
+          {!isCodeStage && <h2>Вхід</h2>}
+          {!isCodeStage && (
+            <button className="google-login_login" onClick={() => login()}>
+              <img
+                src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
+                alt="Google icon"
+                className="google-icon"
+              />
+              Увійти за допомогою Google
+            </button>
+          )}
+          {googleUser && !isCodeStage && (
             <div className="google-user-info">
               {error && <div className="error-message">{error}</div>}
               <button className="login-button" onClick={handleGoogleLogin}>
                 Увійти
               </button>
             </div>
-          ) : (
+          )}
+          {!googleUser && !isCodeStage && (
             <>
-              {!isCodeStage && (
-                <>
-                  <div className="form-group">
-                    <input
-                      type="email"
-                      placeholder="Електронна пошта"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="input-field"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Пароль"
-                      value={password}
-                      onChange={handlePasswordChange}
-                      className="input-field"
-                    />
-                    {password.length > 0 && (
-                      <img
-                        src={passwordIconSrc}
-                        alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
-                        className="password-toggle"
-                        onClick={togglePasswordVisibility}
-                      />
-                    )}
-                  </div>
-                  {error && <div className="error-message">{error}</div>}
-                  <button className="login-button" onClick={handleLogin}>
-                    Увійти
-                  </button>
-                  <div className="navigation-links">
-                    <span onClick={() => navigate('/registration')} className="navigation-link">
-                      Реєстрація
-                    </span>
-                    <span onClick={() => navigate('/forgot-password')} className="navigation-link">
-                      Забули пароль?
-                    </span>
-                  </div>
-                </>
-              )}
+              <div className="form-group">
+                <input
+                  type="email"
+                  placeholder="Електронна пошта"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+              <div className="form-group">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Пароль"
+                  value={password}
+                  onChange={handlePasswordChange}
+                  className="input-field"
+                />
+                {password.length > 0 && (
+                  <img
+                    src={passwordIconSrc}
+                    alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                    className="password-toggle"
+                    onClick={togglePasswordVisibility}
+                  />
+                )}
+              </div>
+              {error && <div className="error-message">{error}</div>}
+              <button className="login-button" onClick={handleLogin}>
+                Увійти
+              </button>
             </>
           )}
+          <div className="navigation-links">
+            <span onClick={() => navigate('/registration')} className="navigation-link">
+              Реєстрація
+            </span>
+            <span onClick={() => navigate('/forgot-password')} className="navigation-link">
+              Забули пароль?
+            </span>
+          </div>
           {isCodeStage && (
             <div className="code-container">
               <h2>Підтвердження коду</h2>

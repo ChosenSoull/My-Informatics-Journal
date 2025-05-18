@@ -34,12 +34,12 @@ if (empty($email) || empty($newPassword) || !filter_var($email, FILTER_VALIDATE_
     exit();
 }
 
-$encryptedEmail = encryptData($email);
-$hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+$hashedEmail = hashData($email);
+$hashedPassword = hashData($newPassword);
+$loginKey = bin2hex(random_bytes(16));
 
 $stmt = $conn->prepare('UPDATE users SET password = ?, login_key = ? WHERE email = ?');
-$loginKey = bin2hex(random_bytes(16));
-$stmt->bind_param('sss', $hashedPassword, $loginKey, $encryptedEmail);
+$stmt->bind_param('sss', $hashedPassword, $loginKey, $hashedEmail);
 if ($stmt->execute()) {
     setcookie('login-key', $loginKey, [
         'expires' => time() + 3600 * 24 * 30,

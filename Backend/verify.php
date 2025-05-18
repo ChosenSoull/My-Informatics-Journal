@@ -40,7 +40,7 @@ if (!verifyCode($email, $code)) {
     exit();
 }
 
-$encryptedEmail = encryptData($email);
+$hashedEmail = hashData($email);
 $loginKey = bin2hex(random_bytes(16));
 setcookie('login-key', $loginKey, [
     'expires' => time() + 3600 * 24 * 30,
@@ -51,7 +51,7 @@ setcookie('login-key', $loginKey, [
 ]);
 
 $stmt = $conn->prepare('UPDATE users SET login_key = ? WHERE email = ?');
-$stmt->bind_param('ss', $loginKey, $encryptedEmail);
+$stmt->bind_param('ss', $loginKey, $hashedEmail);
 $stmt->execute();
 
 echo json_encode(['status' => 'verified']);

@@ -225,51 +225,23 @@ const ForgotPassword: React.FC = () => {
     <div className="container-ForgotPassword" style={{ backgroundImage: `url('${containerBackground}')` }}>
       <div className="position-container-ForgotPassword">
         <div className="form-container-ForgotPassword">
-          <h2>Відновлення пароля</h2>
-          <button className="google-ForgotPassword" onClick={() => login()}>
-            <img
-              src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
-              alt="Google icon"
-              className="google-icon"
-            />
-            Відновити за допомогою Google
-          </button>
+          {!isCodeStage && !isPasswordStage && <h2>Відновлення пароля</h2>}
+          {/* Показуємо кнопку Google лише на початковому етапі */}
+          {!isCodeStage && !isPasswordStage && (
+            <button className="google-ForgotPassword" onClick={() => login()}>
+              <img
+                src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
+                alt="Google icon"
+                className="google-icon"
+              />
+              Відновити за допомогою Google
+            </button>
+          )}
           {googleUser ? (
             <div className="google-user-info">
-              {isCodeStage ? (
-                <div className="code-container">
-                  <h2>Підтвердження коду</h2>
-                  <p>Введіть 6-значний код, відправлений на {googleUser.email}</p>
-                  <div className="code-inputs">
-                    {code.map((digit, index) => (
-                      <input
-                        key={index}
-                        id={`code-input-${index}`}
-                        type="text"
-                        value={digit}
-                        onChange={(e) => handleCodeChange(index, e.target.value)}
-                        className="code-input"
-                        maxLength={1}
-                        autoFocus={index === 0}
-                      />
-                    ))}
-                  </div>
-                  {error && <div className="error-message">{error}</div>}
-                  <button className="verify-button" onClick={handleCodeSubmit}>
-                    Підтвердити
-                  </button>
-                  <button
-                    className="resend-button"
-                    onClick={handleResendCode}
-                    disabled={resendCooldown > 0}
-                  >
-                    {resendCooldown > 0
-                      ? `Надіслати повторно через ${resendCooldown} сек`
-                      : 'Надіслати код повторно'}
-                  </button>
-                </div>
-              ) : isPasswordStage ? (
+              {isPasswordStage ? (
                 <div className="password-container">
+                  <h2>Задай новий пароль</h2>
                   <div className="form-group">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -301,6 +273,38 @@ const ForgotPassword: React.FC = () => {
                     Зберегти
                   </button>
                 </div>
+              ) : isCodeStage ? (
+                <div className="code-container">
+                  <h2>Підтвердження коду</h2>
+                  <p>Введіть 6-значний код, відправлений на {googleUser.email}</p>
+                  <div className="code-inputs">
+                    {code.map((digit, index) => (
+                      <input
+                        key={index}
+                        id={`code-input-${index}`}
+                        type="text"
+                        value={digit}
+                        onChange={(e) => handleCodeChange(index, e.target.value)}
+                        className="code-input"
+                        maxLength={1}
+                        autoFocus={index === 0}
+                      />
+                    ))}
+                  </div>
+                  {error && <div className="error-message">{error}</div>}
+                  <button className="verify-button" onClick={handleCodeSubmit}>
+                    Підтвердити
+                  </button>
+                  <button
+                    className="resend-button"
+                    onClick={handleResendCode}
+                    disabled={resendCooldown > 0}
+                  >
+                    {resendCooldown > 0
+                      ? `Надіслати повторно через ${resendCooldown} сек`
+                      : 'Надіслати код повторно'}
+                  </button>
+                </div>
               ) : (
                 <>
                   {error && <div className="error-message">{error}</div>}
@@ -329,14 +333,41 @@ const ForgotPassword: React.FC = () => {
                   Надіслати посилання
                 </button>
               )}
-              <div className="navigation-links">
-                <span onClick={() => navigate('/registration')} className="navigation-link">
-                  Реєстрація
-                </span>
-                <span onClick={() => navigate('/login')} className="navigation-link">
-                  Вхід
-                </span>
-              </div>
+              {isPasswordStage && (
+                <div className="password-container">
+                  <h2>Задай новий пароль</h2>
+                  <div className="form-group">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Новий пароль"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="input-field"
+                    />
+                    {newPassword.length > 0 && (
+                      <img
+                        src={passwordIconSrc}
+                        alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                        className="password-toggle"
+                        onClick={togglePasswordVisibility}
+                      />
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Повторити новий пароль"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
+                  {error && <div className="error-message">{error}</div>}
+                  <button className="ForgotPassword-button" onClick={handlePasswordSubmit}>
+                    Зберегти
+                  </button>
+                </div>
+              )}
               {isCodeStage && (
                 <div className="code-container">
                   <h2>Підтвердження коду</h2>
@@ -370,42 +401,17 @@ const ForgotPassword: React.FC = () => {
                   </button>
                 </div>
               )}
-              {isPasswordStage && (
-                <div className="password-container">
-                  <div className="form-group">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Новий пароль"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="input-field"
-                    />
-                    {newPassword.length > 0 && (
-                      <img
-                        src={passwordIconSrc}
-                        alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
-                        className="password-toggle"
-                        onClick={togglePasswordVisibility}
-                      />
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Повторити новий пароль"
-                      value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      className="input-field"
-                    />
-                  </div>
-                  {error && <div className="error-message">{error}</div>}
-                  <button className="ForgotPassword-button" onClick={handlePasswordSubmit}>
-                    Зберегти
-                  </button>
-                </div>
-              )}
             </>
           )}
+          {/* Завжди відображаємо navigation-links внизу */}
+          <div className="navigation-links">
+            <span onClick={() => navigate('/registration')} className="navigation-link">
+              Реєстрація
+            </span>
+            <span onClick={() => navigate('/login')} className="navigation-link">
+              Вхід
+            </span>
+          </div>
         </div>
       </div>
     </div>

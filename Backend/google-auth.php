@@ -36,11 +36,11 @@ if (empty($name) || empty($email) || empty($password)) {
     exit();
 }
 
-$encryptedEmail = encryptData($email);
+$hashedEmail = hashData($email);
 $encryptedName = encryptData($name);
 
 $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
-$stmt->bind_param('s', $encryptedEmail);
+$stmt->bind_param('s', $hashedEmail);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -49,10 +49,9 @@ if ($result->num_rows > 0) {
     exit();
 }
 
-// Завантаження аватарки
 $uploadDir = 'uploads/avatars/';
 $hash = substr(bin2hex(random_bytes(4)), 0, 8);
-$fileName = $email . '_' . $hash . '.png';
+$fileName = $hashedEmail . '_' . $hash . '.png';
 $filePath = $uploadDir . $fileName;
 
 if (!is_dir($uploadDir)) {
@@ -65,12 +64,12 @@ if ($imageData === false || file_put_contents($filePath, $imageData) === false) 
     exit();
 }
 
-$avatarUrl = 'uploads/avatars/' . $fileName;
-$hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+$avatarUrl = '/uploads/avatars/' . $fileName;
+$hashedPassword = hashData($password);
 $loginKey = bin2hex(random_bytes(16));
 
 $stmt = $conn->prepare('INSERT INTO users (name, email, password, avatar, login_key) VALUES (?, ?, ?, ?, ?)');
-$stmt->bind_param('sssss', $encryptedName, $encryptedEmail, $hashedPassword, $avatarUrl, $loginKey);
+$stmt->bind_param('sssss', $encryptedName, $hashedEmail, $hashedPassword, $avatarUrl, $loginKey);
 if ($stmt->execute()) {
     setcookie('login-key', $loginKey, [
         'expires' => time() + 3600 * 24 * 30,

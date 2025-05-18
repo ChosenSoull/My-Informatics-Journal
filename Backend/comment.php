@@ -47,12 +47,12 @@ if ($result->num_rows === 0) {
 }
 
 $user = $result->fetch_assoc();
-$encryptedEmail = $user['email'];
+$hashedEmail = $user['email'];
 $name = decryptData($user['name']);
 $avatar = $user['avatar'] ?: '/assets/default_user_icon.png';
 
 $stmt = $conn->prepare('INSERT INTO comments (email, name, avatar, message) VALUES (?, ?, ?, ?)');
-$stmt->bind_param('ssss', $encryptedEmail, $name, $avatar, $message);
+$stmt->bind_param('ssss', $hashedEmail, $name, $avatar, $message);
 if ($stmt->execute()) {
     echo json_encode(['status' => 'ok']);
 } else {

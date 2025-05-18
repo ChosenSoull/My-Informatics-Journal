@@ -36,23 +36,23 @@ if (empty($name) || empty($email) || empty($password) || !filter_var($email, FIL
     exit();
 }
 
-$encryptedEmail = encryptData($email);
+$hashedEmail = hashData($email);
 $encryptedName = encryptData($name);
 
 $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
-$stmt->bind_param('s', $encryptedEmail);
+$stmt->bind_param('s', $hashedEmail);
 $stmt->execute();
 if ($stmt->get_result()->num_rows > 0) {
     echo json_encode(['status' => 'error', 'message' => 'Користувач із таким email уже існує']);
     exit();
 }
 
-$hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+$hashedPassword = hashData($password);
 $loginKey = bin2hex(random_bytes(16));
 
 $stmt = $conn->prepare('INSERT INTO users (name, email, password, avatar, login_key) VALUES (?, ?, ?, ?, ?)');
 $defaultAvatar = '/assets/default_user_icon.png';
-$stmt->bind_param('sssss', $encryptedName, $encryptedEmail, $hashedPassword, $defaultAvatar, $loginKey);
+$stmt->bind_param('sssss', $encryptedName, $hashedEmail, $hashedPassword, $defaultAvatar, $loginKey);
 if (!$stmt->execute()) {
     echo json_encode(['status' => 'error', 'message' => 'Помилка збереження користувача']);
     exit();

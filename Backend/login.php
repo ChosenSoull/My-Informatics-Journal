@@ -35,10 +35,11 @@ if (empty($email) || empty($password) || !filter_var($email, FILTER_VALIDATE_EMA
     exit();
 }
 
-$encryptedEmail = encryptData($email);
+$hashedEmail = hashData($email);
+$hashedPassword = hashData($password);
 
 $stmt = $conn->prepare('SELECT password FROM users WHERE email = ?');
-$stmt->bind_param('s', $encryptedEmail);
+$stmt->bind_param('s', $hashedEmail);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -48,7 +49,7 @@ if ($result->num_rows === 0) {
 }
 
 $row = $result->fetch_assoc();
-if (!password_verify($password, $row['password'])) {
+if ($hashedPassword !== $row['password']) {
     echo json_encode(['status' => 'error', 'message' => 'Невірний пароль']);
     exit();
 }

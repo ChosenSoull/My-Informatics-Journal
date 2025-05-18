@@ -46,16 +46,16 @@ if ($result->num_rows === 0) {
 }
 
 $row = $result->fetch_assoc();
-$encryptedEmail = $row['email'];
-
-if (!password_verify($currentPassword, $row['password'])) {
+$hashedEmail = $row['email'];
+$hashedCurrentPassword = hashData($currentPassword);
+if ($hashedCurrentPassword !== $row['password']) {
     echo json_encode(['status' => 'error', 'message' => 'Невірний поточний пароль']);
     exit();
 }
 
-$hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+$hashedNewPassword = hashData($newPassword);
 $stmt = $conn->prepare('UPDATE users SET password = ? WHERE email = ?');
-$stmt->bind_param('ss', $hashedPassword, $encryptedEmail);
+$stmt->bind_param('ss', $hashedNewPassword, $hashedEmail);
 if ($stmt->execute()) {
     echo json_encode(['status' => 'ok']);
 } else {

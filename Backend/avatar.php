@@ -44,8 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    $encryptedEmail = $result->fetch_assoc()['email'];
-    $email = decryptData($encryptedEmail);
+    $hashedEmail = $result->fetch_assoc()['email'];
 
     if (!isset($_FILES['avatar'])) {
         http_response_code(400);
@@ -70,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $uploadDir = 'uploads/avatars/';
     $hash = substr(bin2hex(random_bytes(4)), 0, 8);
-    $fileName = $email . '_' . $hash . '.png';
+    $fileName = $hashedEmail . '_' . $hash . '.png';
     $filePath = $uploadDir . $fileName;
 
     if (!is_dir($uploadDir)) {
@@ -80,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (move_uploaded_file($file['tmp_name'], $filePath)) {
         $avatarUrl = '/uploads/avatars/' . $fileName;
         $stmt = $conn->prepare('UPDATE users SET avatar = ? WHERE email = ?');
-        $stmt->bind_param('ss', $avatarUrl, $encryptedEmail);
+        $stmt->bind_param('ss', $avatarUrl, $hashedEmail);
         if ($stmt->execute()) {
             echo json_encode(['status' => 'ok']);
         } else {
@@ -108,9 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    $encryptedEmail = $result->fetch_assoc()['email'];
-    $email = decryptData($encryptedEmail);
-    $filePath = 'uploads/avatars/' . $email . '_' . $hash . '.png';
+    $hashedEmail = $result->fetch_assoc()['email'];
+    $filePath = 'uploads/avatars/' . $hashedEmail . '_' . $hash . '.png';
 
     if (file_exists($filePath)) {
         header('Content-Type: image/png');

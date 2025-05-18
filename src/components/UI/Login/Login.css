@@ -313,6 +313,18 @@ html, body {
     text-decoration: underline; /* Підкреслення при наведенні */
   }
 
+  .resend-button{
+    padding: 10px;
+    background-color: transparent;
+    color: var(--text-color);
+    border: 2px solid var(--register-border);
+    border-radius: 15px;
+    cursor: pointer;
+    transition: transform .3s ease;
+    transform: scale(1);
+    margin-top: 10px;
+  }
+
   /* Адаптивность для меньших экранов */
   @media (max-width: 767px) {
     .form-container-login {

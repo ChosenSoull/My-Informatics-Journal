@@ -28,25 +28,16 @@ $conn = getDatabaseConnection();
 
 $data = json_decode(file_get_contents('php://input'), true);
 $email = $data['email'] ?? '';
-$accessToken = $data['accessToken'] ?? '';
 
-if (empty($email) || empty($accessToken) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(['status' => 'error', 'message' => 'Усі поля обов’язкові або невірний email']);
     exit();
 }
 
-$clientId = ''; // Замініть на ваш clientId
-$client = new Google_Client(['client_id' => $clientId]);
-$payload = $client->verifyIdToken($accessToken);
-if (!$payload || $payload['email'] !== $email) {
-    echo json_encode(['status' => 'error', 'message' => 'Невірний токен Google']);
-    exit();
-}
-
-$encryptedEmail = encryptData($email);
+$hashedEmail = hashData($email);
 
 $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
-$stmt->bind_param('s', $encryptedEmail);
+$stmt->bind_param('s', $hashedEmail);
 $stmt->execute();
 if ($stmt->get_result()->num_rows === 0) {
     echo json_encode(['status' => 'error', 'message' => 'Користувача не знайдено']);

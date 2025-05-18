@@ -46,11 +46,11 @@ if ($result->num_rows === 0) {
     exit();
 }
 
-$encryptedEmail = $result->fetch_assoc()['email'];
+$hashedEmail = $result->fetch_assoc()['email'];
 $encryptedName = encryptData($username);
 
 $stmt = $conn->prepare('UPDATE users SET name = ? WHERE email = ?');
-$stmt->bind_param('ss', $encryptedName, $encryptedEmail);
+$stmt->bind_param('ss', $encryptedName, $hashedEmail);
 if ($stmt->execute()) {
     echo json_encode(['status' => 'ok']);
 } else {
