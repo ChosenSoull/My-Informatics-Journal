@@ -1,8 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { ThemeContext } from '../theme';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useNavigate } from 'react-router-dom'; // Додаємо імпорт useNavigate
+import { useNavigate } from 'react-router-dom';
 import './Registration.css';
+import sanitizeHtml from 'sanitize-html';
 
 interface GoogleUser {
   name: string;
@@ -12,7 +13,7 @@ interface GoogleUser {
 
 const Registration: React.FC = () => {
   const { theme } = useContext(ThemeContext);
-  const navigate = useNavigate(); // Ініціалізуємо useNavigate
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -37,19 +38,28 @@ const Registration: React.FC = () => {
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.slice(0, 20);
-    setName(value);
+    const sanitizedValue = sanitizeHtml(e.target.value, {
+      allowedTags: [],
+      allowedAttributes: {},
+    }).slice(0, 20);
+    setName(sanitizedValue);
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setEmail(value);
+    const sanitizedValue = sanitizeHtml(e.target.value, {
+      allowedTags: [],
+      allowedAttributes: {},
+    });
+    setEmail(sanitizedValue);
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newPassword = e.target.value.slice(0, 50);
-    setPassword(newPassword);
-    setPasswordStrength(checkPasswordStrength(newPassword));
+    const sanitizedValue = sanitizeHtml(e.target.value, {
+      allowedTags: [],
+      allowedAttributes: {},
+    }).slice(0, 50);
+    setPassword(sanitizedValue);
+    setPasswordStrength(checkPasswordStrength(sanitizedValue));
   };
 
   const togglePasswordVisibility = () => {
@@ -110,12 +120,16 @@ const Registration: React.FC = () => {
   };
 
   const handleCodeChange = (index: number, value: string) => {
+    const sanitizedValue = sanitizeHtml(value, {
+      allowedTags: [],
+      allowedAttributes: {},
+    }).slice(0, 1);
     const newCode = [...code];
-    newCode[index] = value.slice(0, 1);
+    newCode[index] = sanitizedValue;
     setCode(newCode);
     setError('');
 
-    if (value && index < 5) {
+    if (sanitizedValue && index < 5) {
       const nextInput = document.getElementById(`code-input-${index + 1}`);
       if (nextInput) nextInput.focus();
     }
@@ -135,7 +149,7 @@ const Registration: React.FC = () => {
           if (data.status === 'verified') {
             const loginKey = document.cookie.match(/login-key=[^;]+/);
             if (loginKey) {
-              navigate('/'); // Замінюємо window.location.href на navigate
+              navigate('/');
             } else {
               throw new Error('Куки login-key не отримані');
             }
@@ -198,7 +212,7 @@ const Registration: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.status === 'ok') {
-          navigate('/'); // Замінюємо window.location.href на navigate
+          navigate('/');
         } else {
           setError('Помилка на сервері: ' + (data.message || 'Спробуйте ще раз'));
         }
@@ -269,7 +283,7 @@ const Registration: React.FC = () => {
                         type="password"
                         placeholder="Введіть пароль для акаунта"
                         value={googlePassword}
-                        onChange={(e) => setGooglePassword(e.target.value)}
+                        onChange={(e) => setGooglePassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                         className="input-field"
                       />
                     </div>
@@ -325,7 +339,7 @@ const Registration: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Повторити пароль"
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={(e) => setConfirmPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
                       maxLength={50}
                     />

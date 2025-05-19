@@ -3,6 +3,7 @@ import { ThemeContext } from '../theme';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import './ForgotPassword.css';
+import sanitizeHtml from 'sanitize-html';
 
 interface GoogleUser {
   email: string;
@@ -64,12 +65,16 @@ const ForgotPassword: React.FC = () => {
   };
 
   const handleCodeChange = (index: number, value: string) => {
+    const sanitizedValue = sanitizeHtml(value, {
+      allowedTags: [], // Забороняємо всі теги
+      allowedAttributes: {},
+    }).slice(0, 1); // Обмежуємо до 1 символа
     const newCode = [...code];
-    newCode[index] = value.slice(0, 1);
+    newCode[index] = sanitizedValue;
     setCode(newCode);
     setError('');
 
-    if (value && index < 5) {
+    if (sanitizedValue && index < 5) {
       const nextInput = document.getElementById(`code-input-${index + 1}`);
       if (nextInput) nextInput.focus();
     }
@@ -247,7 +252,7 @@ const ForgotPassword: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Новий пароль"
                       value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
+                      onChange={(e) => setNewPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
                     />
                     {newPassword.length > 0 && (
@@ -264,7 +269,7 @@ const ForgotPassword: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Повторити новий пароль"
                       value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      onChange={(e) => setConfirmNewPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
                     />
                   </div>
@@ -322,7 +327,7 @@ const ForgotPassword: React.FC = () => {
                     type="email"
                     placeholder="Електронна пошта"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                     className="input-field"
                   />
                 </div>
@@ -341,7 +346,7 @@ const ForgotPassword: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Новий пароль"
                       value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
+                      onChange={(e) => setNewPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
                     />
                     {newPassword.length > 0 && (
@@ -358,7 +363,7 @@ const ForgotPassword: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Повторити новий пароль"
                       value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      onChange={(e) => setConfirmNewPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
                     />
                   </div>

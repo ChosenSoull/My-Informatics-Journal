@@ -23,39 +23,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once 'utils/connection.php';
 require_once 'utils/encryption.php';
 
-$conn = getDatabaseConnection();
+try {
+    $conn = getDatabaseConnection();
+    if (!$conn) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка підключення до бази даних']);
+        exit();
+    }
 
-$data = json_decode(file_get_contents('php://input'), true);
-$username = $data['username'] ?? '';
-$loginKey = $data['loginKey'] ?? '';
+    // Перевірка автентифікації (loginKey)
+    $loginKey = $_COOKIE['login-key'] ?? '';
+    if (empty($loginKey) || strlen($loginKey) > 255) {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Відсутній або невалідний login-key']);
+        exit();
+    }
 
-if (empty($username) || empty($loginKey) || strlen($username) > 255 || strlen($loginKey) > 255) {
-    echo json_encode(['status' => 'error', 'message' => 'Усі поля обов’язкові або занадто довгі']);
-    exit();
-}
+    $data = json_decode(file_get_contents('php://input'), true);
+    $username = $data['username'] ?? '';
 
-$username = htmlspecialchars($username, ENT_QUOTES, 'UTF-8');
+    // Перевірка вхідних даних (username)
+    if (empty($username) || strlen($username) > 255) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Ім’я користувача обов’язкове або занадто довге']);
+        exit();
+    }
 
-$stmt = $conn->prepare('SELECT email FROM users WHERE login_key = ?');
-$stmt->bind_param('s', $loginKey);
-$stmt->execute();
-$result = $stmt->get_result();
+    $username = htmlspecialchars($username, ENT_QUOTES, 'UTF-8');
 
-if ($result->num_rows === 0) {
-    echo json_encode(['status' => 'error', 'message' => 'Невірний loginKey']);
-    exit();
-}
+    // Отримуємо email користувача
+    $stmt = $conn->prepare('SELECT email FROM users WHERE login_key = ?');
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
+        exit();
+    }
+    $stmt->bind_param('s', $loginKey);
+    if (!$stmt->execute()) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка виконання запиту до бази даних']);
+        $stmt->close();
+        exit();
+    }
+    $result = $stmt->get_result();
 
-$hashedEmail = $result->fetch_assoc()['email'];
-$encryptedName = encryptData($username);
+    if ($result->num_rows === 0) {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Невірний login-key']);
+        $stmt->close();
+        exit();
+    }
 
-$stmt = $conn->prepare('UPDATE users SET name = ? WHERE email = ?');
-$stmt->bind_param('ss', $encryptedName, $hashedEmail);
-if ($stmt->execute()) {
+    $hashedEmail = $result->fetch_assoc()['email'];
+    $stmt->close();
+
+    $encryptedName = encryptData($username);
+
+    $stmt = $conn->prepare('UPDATE users SET name = ? WHERE email = ?');
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
+        exit();
+    }
+    $stmt->bind_param('ss', $encryptedName, $hashedEmail);
+    if (!$stmt->execute()) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка виконання оновлення імені']);
+        $stmt->close();
+        exit();
+    }
+
     echo json_encode(['status' => 'ok']);
-} else {
-    echo json_encode(['status' => 'error', 'message' => 'Помилка зміни імені']);
+    $stmt->close();
+} finally {
+    if (isset($conn) && $conn) {
+        $conn->close();
+    }
 }
-
-$conn->close();
 ?>

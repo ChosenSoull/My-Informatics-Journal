@@ -1,6 +1,4 @@
 <?php
-header('Content-Type: application/json; charset=UTF-8');
-
 $allowedOrigin = 'https://chosensoul.kesug.com';
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
@@ -24,31 +22,59 @@ require_once 'utils/connection.php';
 require_once 'utils/encryption.php';
 
 $conn = getDatabaseConnection();
+if (!$conn) {
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Помилка підключення до бази даних']);
+    exit();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $loginKey = $_POST['loginKey'] ?? '';
+    header('Content-Type: application/json; charset=UTF-8');
+
+    // Перевірка наявності login-key у кукі
+    $loginKey = $_COOKIE['login-key'] ?? '';
     if (empty($loginKey) || strlen($loginKey) > 255) {
-        http_response_code(400);
-        echo json_encode(['status' => 'error', 'message' => 'Невірний або відсутній loginKey']);
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Невірний або відсутній login-key']);
+        $conn->close();
         exit();
     }
 
-    $stmt = $conn->prepare('SELECT email FROM users WHERE login_key = ?');
+    // Отримуємо email та поточний аватар користувача
+    $stmt = $conn->prepare('SELECT email, avatar FROM users WHERE login_key = ?');
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
+        $conn->close();
+        exit();
+    }
     $stmt->bind_param('s', $loginKey);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка виконання запиту до бази даних']);
+        $stmt->close();
+        $conn->close();
+        exit();
+    }
     $result = $stmt->get_result();
 
     if ($result->num_rows === 0) {
         http_response_code(401);
-        echo json_encode(['status' => 'error', 'message' => 'Невірний loginKey']);
+        echo json_encode(['status' => 'error', 'message' => 'Невірний login-key']);
+        $stmt->close();
+        $conn->close();
         exit();
     }
 
-    $hashedEmail = $result->fetch_assoc()['email'];
+    $user = $result->fetch_assoc();
+    $hashedEmail = $user['email'];
+    $currentAvatarPathFromDB = $user['avatar'] ?: '/assets/default_user_icon.png';
+    $stmt->close();
 
     if (!isset($_FILES['avatar'])) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Файл аватара відсутній']);
+        $conn->close();
         exit();
     }
 
@@ -56,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($file['size'] > 2 * 1024 * 1024) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Файл занадто великий']);
+        $conn->close();
         exit();
     }
 
@@ -64,58 +91,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($fileType, $allowedTypes)) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Недозволений тип файлу']);
+        $conn->close();
         exit();
     }
 
+    // Визначаємо розширення на основі mime-типу
+    $extension = ($fileType === 'image/png') ? 'png' : 'jpeg';
     $uploadDir = 'uploads/avatars/';
     $hash = substr(bin2hex(random_bytes(4)), 0, 8);
-    $fileName = $hashedEmail . '_' . $hash . '.png';
+    $fileName = $hashedEmail . '_' . $hash . '.' . $extension;
     $filePath = $uploadDir . $fileName;
 
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        if (!mkdir($uploadDir, 0755, true)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Не вдалося створити директорію для завантаження']);
+            $conn->close();
+            exit();
+        }
     }
 
     if (move_uploaded_file($file['tmp_name'], $filePath)) {
         $avatarUrl = '/uploads/avatars/' . $fileName;
+
+        // Безпечне видалення старого аватара
+        if ($currentAvatarPathFromDB !== '/assets/default_user_icon.png') {
+            $oldFileName = basename($currentAvatarPathFromDB);
+            $oldFilePath = $uploadDir . $oldFileName;
+            $realOldPath = realpath($oldFilePath);
+
+            if ($realOldPath && strpos($realOldPath, realpath($uploadDir)) === 0) {
+                if (file_exists($realOldPath)) {
+                    unlink($realOldPath);
+                }
+            }
+        }
+
+        // Оновлюємо запис у базі даних
         $stmt = $conn->prepare('UPDATE users SET avatar = ? WHERE email = ?');
+        if (!$stmt) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
+            unlink($filePath);
+            $conn->close();
+            exit();
+        }
         $stmt->bind_param('ss', $avatarUrl, $hashedEmail);
         if ($stmt->execute()) {
             echo json_encode(['status' => 'ok']);
         } else {
-            unlink($filePath);
+            unlink($filePath); // Видаляємо новий файл, якщо оновлення бази не вдалося
+            http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Помилка оновлення аватарки']);
         }
+        $stmt->close();
     } else {
         http_response_code(500);
         echo json_encode(['status' => 'error', 'message' => 'Помилка завантаження файлу']);
+        $conn->close();
+        exit();
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $loginKey = $_GET['loginKey'] ?? '';
+    // Перевірка наявності login-key у кукі
+    $loginKey = $_COOKIE['login-key'] ?? '';
     if (empty($loginKey) || strlen($loginKey) > 255) {
-        http_response_code(400);
+        http_response_code(401);
+        $conn->close();
         exit();
     }
 
-    $stmt = $conn->prepare('SELECT email FROM users WHERE login_key = ?');
+    $stmt = $conn->prepare('SELECT email, avatar FROM users WHERE login_key = ?');
+    if (!$stmt) {
+        http_response_code(500);
+        $conn->close();
+        exit();
+    }
     $stmt->bind_param('s', $loginKey);
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        http_response_code(500);
+        $stmt->close();
+        $conn->close();
+        exit();
+    }
     $result = $stmt->get_result();
 
     if ($result->num_rows === 0) {
         http_response_code(401);
+        $stmt->close();
+        $conn->close();
         exit();
     }
 
-    $hashedEmail = $result->fetch_assoc()['email'];
-    $filePath = 'uploads/avatars/' . $hashedEmail . '_' . $hash . '.png';
+    $user = $result->fetch_assoc();
+    $currentAvatarPathFromDB = $user['avatar'] ?: '/assets/default_user_icon.png';
+    $stmt->close();
 
-    if (file_exists($filePath)) {
-        header('Content-Type: image/png');
-        readfile($filePath);
+    // Безпечне отримання шляху до аватара
+    $fileName = basename($currentAvatarPathFromDB);
+    $filePath = 'uploads/avatars/' . $fileName;
+    $realFilePath = realpath($filePath);
+
+    if ($realFilePath && strpos($realFilePath, realpath('uploads/avatars/')) === 0 && file_exists($realFilePath)) {
+        header('Content-Type: image/' . (pathinfo($realFilePath, PATHINFO_EXTENSION) === 'png' ? 'png' : 'jpeg'));
+        readfile($realFilePath);
     } else {
         header('Content-Type: image/png');
-        readfile('assets/default_user_icon.png');
+        readfile($_SERVER['DOCUMENT_ROOT'] . '/assets/default_user_icon.png');
     }
 }
 

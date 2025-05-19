@@ -24,12 +24,16 @@ require_once 'utils/connection.php';
 require_once 'utils/encryption.php';
 
 $conn = getDatabaseConnection();
+if (!$conn) {
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Помилка підключення до бази даних']);
+    exit();
+}
 
-$data = json_decode(file_get_contents('php://input'), true);
-$loginKey = $data['loginKey'] ?? '';
-
+$loginKey = $_COOKIE['login-key'] ?? '';
 if (empty($loginKey) || strlen($loginKey) > 255) {
-    echo json_encode(['status' => 'error', 'message' => 'Невірний або відсутній loginKey']);
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Невірний або відсутній login-key']);
     exit();
 }
 
@@ -39,7 +43,8 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
-    echo json_encode(['status' => 'error', 'message' => 'Невірний loginKey']);
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Невірний login-key']);
     exit();
 }
 

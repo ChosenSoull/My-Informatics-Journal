@@ -78,14 +78,10 @@ const MainMenu: React.FC = () => {
 
   // Функція для завантаження інформації про користувача
   const loadUserInfo = async () => {
-    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
-    if (!loginKey) return;
-
     try {
       const response = await fetch('/account-info.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ loginKey }),
       });
       const data = await response.json();
       if (response.ok && data.name && data.avatarsrc) {
@@ -160,7 +156,7 @@ const MainMenu: React.FC = () => {
         }
       }
     }, 4000);
-  
+
     return () => clearInterval(interval);
   }, []);
 
@@ -196,12 +192,6 @@ const MainMenu: React.FC = () => {
       return;
     }
 
-    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
-    if (!loginKey) {
-      alert('Помилка авторизації. Перевірте login-key.');
-      return;
-    }
-
     try {
       cropperInstance.getCroppedCanvas({
         width: 200,
@@ -210,7 +200,6 @@ const MainMenu: React.FC = () => {
         if (blob) {
           const formData = new FormData();
           formData.append('avatar', blob, 'avatar.png');
-          formData.append('loginKey', loginKey);
           try {
             const response = await fetch('/avatar.php', {
               method: 'POST',
@@ -221,7 +210,7 @@ const MainMenu: React.FC = () => {
               setIsChangeAvatarModalOpen(false);
               setAvatarFile(null);
               setIsCropperReady(false);
-              setAvatarSrc('/avatar.php?loginKey=' + encodeURIComponent(loginKey));
+              setAvatarSrc('/avatar.php');
             } else {
               console.error('Помилка завантаження аватара:', response.status, response.statusText);
               alert(`Помилка завантаження аватара: ${response.statusText}`);
@@ -253,16 +242,11 @@ const MainMenu: React.FC = () => {
       alert('Будь ласка, введіть нове ім’я.');
       return;
     }
-    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
-    if (!loginKey) {
-      alert('Помилка авторизації. Перевірте login-key.');
-      return;
-    }
     try {
       const response = await fetch('/chname.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: newUsername, loginKey }),
+        body: JSON.stringify({ username: newUsername }),
       });
       if (response.ok) {
         alert('Ім’я успішно змінено!');
@@ -288,16 +272,11 @@ const MainMenu: React.FC = () => {
       alert('Нові паролі не збігаються.');
       return;
     }
-    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
-    if (!loginKey) {
-      alert('Помилка авторизації. Перевірте login-key.');
-      return;
-    }
     try {
       const response = await fetch('/chpassword.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword, loginKey }),
+        body: JSON.stringify({ currentPassword, newPassword }),
       });
       if (response.ok) {
         alert('Пароль успішно змінено!');
@@ -317,12 +296,10 @@ const MainMenu: React.FC = () => {
   // Обробник для "Вихід"
   const handleLogout = () => {
     localStorage.clear();
-    document.cookie.split(';').forEach((cookie) => {
-      document.cookie = cookie.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
-    });
     setIsUserLoggedIn(false);
     setUsername('Користувач');
     setAvatarSrc('assets/default_user_icon.png');
+    document.cookie = 'login-key=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=Strict';
     window.location.reload();
   };
 
@@ -332,17 +309,12 @@ const MainMenu: React.FC = () => {
       alert('Будь ласка, введіть коментар.');
       return;
     }
-    const loginKey = document.cookie.split('; ').find(row => row.startsWith('login-key'))?.split('=')[1];
-    if (!loginKey) {
-      alert('Помилка авторизації. Перевірте login-key.');
-      return;
-    }
     const sanitizedComment = sanitizeHtml(commentText);
     try {
       const response = await fetch('/comment.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: sanitizedComment, loginKey }),
+        body: JSON.stringify({ message: sanitizedComment }),
       });
       if (response.ok) {
         alert('Коментар успішно відправлено!');

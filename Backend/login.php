@@ -24,38 +24,78 @@ require_once 'utils/connection.php';
 require_once 'utils/encryption.php';
 require_once 'utils/two_factor_auth.php';
 
-$conn = getDatabaseConnection();
+$conn = null;
+try {
+    $conn = getDatabaseConnection();
+    if (!$conn) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка підключення до бази даних']);
+        exit();
+    }
 
-$data = json_decode(file_get_contents('php://input'), true);
-$email = $data['email'] ?? '';
-$password = $data['password'] ?? '';
+    $data = json_decode(file_get_contents('php://input'), true);
+    $email = $data['email'] ?? '';
+    $password = $data['password'] ?? '';
 
-if (empty($email) || empty($password) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) > 255) {
-    echo json_encode(['status' => 'error', 'message' => 'Усі поля обов’язкові або невірний email/пароль']);
-    exit();
+    // Валідація вхідних даних
+    if (empty($email) || empty($password) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255 || strlen($password) > 255) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Невірний email, пароль або їх довжина']);
+        exit();
+    }
+
+    $hashedEmail = hashData($email);
+
+    // Перевірка наявності користувача та пароля
+    $stmt = $conn->prepare('SELECT password FROM users WHERE email = ?');
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
+        exit();
+    }
+    $stmt->bind_param('s', $hashedEmail);
+    if (!$stmt->execute()) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка виконання запиту до бази даних']);
+        $stmt->close();
+        exit();
+    }
+    $result = $stmt->get_result();
+    $stmt->close();
+
+    if ($result->num_rows === 0) {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Авторизація не вдалася']);
+        exit();
+    }
+
+    $row = $result->fetch_assoc();
+    $storedPasswordHash = $row['password'];
+
+    if (!password_verify($password, $storedPasswordHash)) {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Авторизація не вдалася']);
+        exit();
+    }
+
+    // Генерація та надсилання коду верифікації
+    try {
+        if (!generateVerificationCode($email)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Помилка генерації або надсилання коду']);
+            exit();
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка генерації або надсилання коду: ' . $e->getMessage()]);
+        exit();
+    }
+
+    http_response_code(200);
+    echo json_encode(['status' => 'ok', 'message' => 'Код верифікації надіслано']);
+} finally {
+    if (isset($conn) && $conn) {
+        $conn->close();
+    }
 }
-
-$hashedEmail = hashData($email);
-$hashedPassword = hashData($password);
-
-$stmt = $conn->prepare('SELECT password FROM users WHERE email = ?');
-$stmt->bind_param('s', $hashedEmail);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows === 0) {
-    echo json_encode(['status' => 'error', 'message' => 'Користувача не знайдено']);
-    exit();
-}
-
-$row = $result->fetch_assoc();
-if ($hashedPassword !== $row['password']) {
-    echo json_encode(['status' => 'error', 'message' => 'Невірний пароль']);
-    exit();
-}
-
-generateVerificationCode($email);
-
-echo json_encode(['status' => 'ok']);
-$conn->close();
 ?>

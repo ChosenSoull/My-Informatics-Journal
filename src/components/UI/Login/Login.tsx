@@ -3,6 +3,7 @@ import { ThemeContext } from '../theme';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
+import sanitizeHtml from 'sanitize-html';
 
 interface GoogleUser {
   email: string;
@@ -22,7 +23,11 @@ const Login: React.FC = () => {
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
+    const sanitizedValue = sanitizeHtml(e.target.value, {
+      allowedTags: [],
+      allowedAttributes: {},
+    });
+    setPassword(sanitizedValue);
   };
 
   const togglePasswordVisibility = () => {
@@ -66,12 +71,16 @@ const Login: React.FC = () => {
   };
 
   const handleCodeChange = (index: number, value: string) => {
+    const sanitizedValue = sanitizeHtml(value, {
+      allowedTags: [],
+      allowedAttributes: {},
+    }).slice(0, 1);
     const newCode = [...code];
-    newCode[index] = value.slice(0, 1);
+    newCode[index] = sanitizedValue;
     setCode(newCode);
     setError('');
 
-    if (value && index < 5) {
+    if (sanitizedValue && index < 5) {
       const nextInput = document.getElementById(`code-input-${index + 1}`);
       if (nextInput) nextInput.focus();
     }
@@ -216,7 +225,7 @@ const Login: React.FC = () => {
                   type="email"
                   placeholder="Електронна пошта"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                   className="input-field"
                 />
               </div>
