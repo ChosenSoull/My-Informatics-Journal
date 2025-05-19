@@ -27,6 +27,7 @@ const Registration: React.FC = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
   const [googlePassword, setGooglePassword] = useState('');
+  const [googleIdToken, setGoogleIdToken] = useState(''); // Зберігаємо id_token
 
   const checkPasswordStrength = (pass: string) => {
     if (pass.length === 0) return '';
@@ -41,7 +42,7 @@ const Registration: React.FC = () => {
     const sanitizedValue = sanitizeHtml(e.target.value, {
       allowedTags: [],
       allowedAttributes: {},
-    }).slice(0, 20);
+    }).slice(0, 255);
     setName(sanitizedValue);
   };
 
@@ -57,7 +58,7 @@ const Registration: React.FC = () => {
     const sanitizedValue = sanitizeHtml(e.target.value, {
       allowedTags: [],
       allowedAttributes: {},
-    }).slice(0, 50);
+    }).slice(0, 255);
     setPassword(sanitizedValue);
     setPasswordStrength(checkPasswordStrength(sanitizedValue));
   };
@@ -75,25 +76,37 @@ const Registration: React.FC = () => {
     : '/assets/page-bg-dark.png';
 
   const isValidEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@(gmail\.com|mail\.ru|yahoo\.com|outlook\.com)$/i;
-    return emailRegex.test(email) && email.includes('@');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email); // Видалено filter_var, використовуємо лише regex
   };
 
   const handleRegister = async () => {
     if (name.length === 0 || password.length === 0 || email.length === 0 || confirmPassword.length === 0) {
-      alert('Усі поля повинні бути заповнені!');
+      setError('Усі поля повинні бути заповнені!');
+      return;
+    }
+    if (name.length > 255) {
+      setError('Ім’я не може перевищувати 255 символів!');
+      return;
+    }
+    if (email.length > 255) {
+      setError('Електронна пошта не може перевищувати 255 символів!');
+      return;
+    }
+    if (password.length > 255) {
+      setError('Пароль не може перевищувати 255 символів!');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Пароль повинен містити щонайменше 8 символів!');
       return;
     }
     if (password !== confirmPassword) {
-      alert('Паролі не збігаються!');
+      setError('Паролі не збігаються!');
       return;
     }
     if (!isValidEmail(email)) {
-      alert('Невірний формат email. Використовуйте @ і домени: mail.ru, gmail.com, yahoo.com, outlook.com');
-      return;
-    }
-    if (password.length > 50) {
-      alert('Пароль не може перевищувати 50 символів!');
+      setError('Невірний формат email!');
       return;
     }
 
@@ -101,21 +114,23 @@ const Registration: React.FC = () => {
       const response = await fetch('/register.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name, email, password }),
       });
+      const data = await response.json();
       if (response.ok) {
-        const data = await response.json();
         if (data.status === 'ok') {
           setIsCodeStage(true);
+          setError('');
         } else {
-          setError('Помилка на сервері: ' + (data.message || 'Спробуйте ще раз'));
+          setError(data.message || 'Помилка на сервері. Спробуйте ще раз.');
         }
       } else {
-        setError('Помилка при відправці даних на сервер');
+        setError('Немає зв’язку з сервером');
       }
     } catch (error) {
+      setError('Немає зв’язку з сервером');
       console.error('Помилка мережі:', error);
-      setError('Сталася мережева помилка');
     }
   };
 
@@ -137,59 +152,76 @@ const Registration: React.FC = () => {
 
   const handleCodeSubmit = async () => {
     const codeString = code.join('');
-    if (codeString.length === 6) {
-      try {
-        const response = await fetch('/verify.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, code: codeString }),
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'verified') {
-            const loginKey = document.cookie.match(/login-key=[^;]+/);
-            if (loginKey) {
-              navigate('/');
-            } else {
-              throw new Error('Куки login-key не отримані');
-            }
-          } else {
-            throw new Error('Невірний код підтвердження');
-          }
-        } else {
-          throw new Error('Помилка сервера при перевірці коду');
-        }
-      } catch (error: any) {
-        setError(error.message);
-        setCode(['', '', '', '', '', '']);
-      }
-    } else {
+    if (codeString.length !== 6) {
       setError('Введіть 6-значний код');
+      return;
+    }
+
+    try {
+      const response = await fetch('/verify.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, code: codeString, action: 'registration' }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        if (data.status === 'verified') {
+          navigate('/');
+        } else {
+          setError(data.message || 'Невірний код підтвердження');
+          setCode(['', '', '', '', '', '']);
+        }
+      } else {
+        setError('Немає зв’язку з сервером');
+      }
+    } catch (error) {
+      setError('Немає зв’язку з сервером');
+      console.error('Помилка мережі:', error);
     }
   };
 
   const handleResendCode = async () => {
+    if (!email) {
+      setError('Електронна пошта повинна бути заповнена!');
+      return;
+    }
+    if (email.length > 255) {
+      setError('Електронна пошта не може перевищувати 255 символів!');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError('Невірний формат email!');
+      return;
+    }
+
     try {
       const response = await fetch('/resend-code.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email }),
       });
+      const data = await response.json();
       if (response.ok) {
-        setResendCooldown(30);
-        setError('');
-        setCode(['', '', '', '', '', '']);
+        if (data.status === 'ok') {
+          setResendCooldown(30);
+          setError('');
+          setCode(['', '', '', '', '', '']);
+        } else {
+          setError(data.message || 'Не вдалося надіслати код повторно');
+        }
       } else {
-        setError('Не вдалося надіслати код повторно');
+        setError('Немає зв’язку з сервером');
       }
     } catch (error) {
-      setError('Сталася помилка при повторному надсиланні');
+      setError('Немає зв’язку з сервером');
       console.error('Помилка при повторному надсиланні:', error);
     }
   };
 
   const handleGoogleSubmit = async () => {
-    if (!googleUser) {
+    if (!googleIdToken) {
       setError('Спочатку увійдіть через Google');
       return;
     }
@@ -197,36 +229,41 @@ const Registration: React.FC = () => {
       setError('Введіть пароль');
       return;
     }
+    if (googlePassword.length < 8) {
+      setError('Пароль повинен містити щонайменше 8 символів!');
+      return;
+    }
+    if (googlePassword.length > 255) {
+      setError('Пароль не може перевищувати 255 символів!');
+      return;
+    }
 
     try {
       const response = await fetch('/google-auth.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: googleUser.name,
-          email: googleUser.email,
-          picture: googleUser.picture,
-          password: googlePassword,
-        }),
+        credentials: 'include',
+        body: JSON.stringify({ id_token: googleIdToken, password: googlePassword }),
       });
+      const data = await response.json();
       if (response.ok) {
-        const data = await response.json();
         if (data.status === 'ok') {
           navigate('/');
         } else {
-          setError('Помилка на сервері: ' + (data.message || 'Спробуйте ще раз'));
+          setError(data.message || 'Помилка на сервері. Спробуйте ще раз.');
         }
       } else {
-        setError('Помилка при відправці даних на сервер');
+        setError('Немає зв’язку з сервером');
       }
     } catch (error) {
+      setError('Немає зв’язку з сервером');
       console.error('Помилка мережі:', error);
-      setError('Сталася мережева помилка');
     }
   };
 
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
+      setGoogleIdToken(tokenResponse.access_token); // Зберігаємо id_token
       fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: {
           Authorization: `Bearer ${tokenResponse.access_token}`,
@@ -312,7 +349,7 @@ const Registration: React.FC = () => {
                       value={name}
                       onChange={handleNameChange}
                       className="input-field"
-                      maxLength={20}
+                      maxLength={255}
                     />
                   </div>
                   <div className="form-group">
@@ -322,7 +359,7 @@ const Registration: React.FC = () => {
                       value={password}
                       onChange={handlePasswordChange}
                       className="input-field"
-                      maxLength={50}
+                      maxLength={255}
                     />
                     {password.length > 0 && (
                       <img
@@ -341,7 +378,7 @@ const Registration: React.FC = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
-                      maxLength={50}
+                      maxLength={255}
                     />
                   </div>
                 </>

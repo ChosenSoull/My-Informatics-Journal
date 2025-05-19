@@ -36,10 +36,16 @@ try {
 
     $data = json_decode(file_get_contents('php://input'), true);
     $idToken = $data['id_token'] ?? '';
+    $password = $data['password'] ?? '';
 
     if (empty($idToken)) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'ID Token є обов’язковим']);
+        exit();
+    }
+    if (empty($password) || strlen($password) > 255) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Пароль є обов’язковим або перевищує 255 символів']);
         exit();
     }
 
@@ -70,6 +76,7 @@ try {
 
     $hashedEmail = hashData($email);
     $encryptedName = encryptData($name);
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
     $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
     if (!$stmt) {
@@ -137,14 +144,14 @@ try {
 
     if ($result->num_rows > 0) {
         // Оновлення існуючого користувача
-        $stmt = $conn->prepare('UPDATE users SET name = ?, avatar = ?, login_key = ?, is_verified = ? WHERE email = ?');
+        $stmt = $conn->prepare('UPDATE users SET name = ?, password = ?, avatar = ?, login_key = ?, is_verified = ? WHERE email = ?');
         if (!$stmt) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
             unlink($filePath);
             exit();
         }
-        $stmt->bind_param('sssii', $encryptedName, $avatarUrl, $loginKey, $isVerified, $hashedEmail);
+        $stmt->bind_param('sssisi', $encryptedName, $hashedPassword, $avatarUrl, $loginKey, $isVerified, $hashedEmail);
         if (!$stmt->execute()) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Помилка оновлення користувача']);
@@ -155,14 +162,14 @@ try {
         $stmt->close();
     } else {
         // Створення нового користувача
-        $stmt = $conn->prepare('INSERT INTO users (name, email, avatar, login_key, is_verified) VALUES (?, ?, ?, ?, ?)');
+        $stmt = $conn->prepare('INSERT INTO users (name, email, password, avatar, login_key, is_verified) VALUES (?, ?, ?, ?, ?, ?)');
         if (!$stmt) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
             unlink($filePath);
             exit();
         }
-        $stmt->bind_param('sssii', $encryptedName, $hashedEmail, $avatarUrl, $loginKey, $isVerified);
+        $stmt->bind_param('sssisi', $encryptedName, $hashedEmail, $hashedPassword, $avatarUrl, $loginKey, $isVerified);
         if (!$stmt->execute()) {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Помилка створення користувача']);

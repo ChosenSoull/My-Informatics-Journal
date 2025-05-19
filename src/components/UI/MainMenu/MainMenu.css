@@ -597,8 +597,8 @@
     border: 2px solid var(--text-input-border);
     border-radius: 25px;
     margin-right: 10px;
-    background-color: var(--text-input-background); /* Используем переменную темы */
-    color: #ffffff; /* Используем переменную темы */
+    background-color: transparent; /* Используем переменную темы */
+    color: var(--text-color); /* Используем переменную темы */
     resize: vertical; /* Разрешаем вертикальное изменение размера */
     min-height: 40px; /* Минимальная высота (чтобы изначально была одна строка) */
     max-height: 40px; /* Максимальная высота (ограничение) */

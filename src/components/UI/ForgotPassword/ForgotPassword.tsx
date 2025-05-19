@@ -15,6 +15,7 @@ const ForgotPassword: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [resetKey, setResetKey] = useState(''); // Зберігаємо reset_key
   const [isCodeStage, setIsCodeStage] = useState(false);
   const [isPasswordStage, setIsPasswordStage] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -23,6 +24,7 @@ const ForgotPassword: React.FC = () => {
   const [error, setError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
+  const [googleIdToken, setGoogleIdToken] = useState(''); // Зберігаємо id_token
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -41,17 +43,23 @@ const ForgotPassword: React.FC = () => {
       setError('Електронна пошта повинна бути заповнена!');
       return;
     }
+    if (email.length > 255) {
+      setError('Електронна пошта не може перевищувати 255 символів!');
+      return;
+    }
 
     try {
       const response = await fetch('/forgot-pass.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email }),
       });
       const data = await response.json();
       if (response.ok) {
         if (data.status === 'ok') {
           setIsCodeStage(true);
+          setError('');
         } else {
           setError(data.message || 'Помилка відправки');
         }
@@ -66,9 +74,9 @@ const ForgotPassword: React.FC = () => {
 
   const handleCodeChange = (index: number, value: string) => {
     const sanitizedValue = sanitizeHtml(value, {
-      allowedTags: [], // Забороняємо всі теги
+      allowedTags: [],
       allowedAttributes: {},
-    }).slice(0, 1); // Обмежуємо до 1 символа
+    }).slice(0, 1);
     const newCode = [...code];
     newCode[index] = sanitizedValue;
     setCode(newCode);
@@ -82,46 +90,65 @@ const ForgotPassword: React.FC = () => {
 
   const handleCodeSubmit = async () => {
     const codeString = code.join('');
-    if (codeString.length === 6) {
-      try {
-        const response = await fetch('/verify.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, code: codeString }),
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'verified') {
-            setIsCodeStage(false);
-            setIsPasswordStage(true);
-          } else {
-            setError('Невірний код підтвердження');
-          }
-        } else {
-          setError('Немає зв’язку з сервером');
-        }
-      } catch (error) {
-        setError('Немає зв’язку з сервером');
-        console.error('Помилка мережі:', error);
-      }
-    } else {
+    if (codeString.length !== 6) {
       setError('Введіть 6-значний код');
+      return;
+    }
+
+    try {
+      const response = await fetch('/verify.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, code: codeString, action: 'forgot-password' }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        if (data.status === 'verified') {
+          setResetKey(data.reset_key); // Зберігаємо reset_key
+          setIsCodeStage(false);
+          setIsPasswordStage(true);
+          setError('');
+        } else {
+          setError(data.message || 'Невірний код підтвердження');
+        }
+      } else {
+        setError('Немає зв’язку з сервером');
+      }
+    } catch (error) {
+      setError('Немає зв’язку з сервером');
+      console.error('Помилка мережі:', error);
     }
   };
 
   const handleResendCode = async () => {
+    if (!email) {
+      setError('Електронна пошта повинна бути заповнена!');
+      return;
+    }
+    if (email.length > 255) {
+      setError('Електронна пошта не може перевищувати 255 символів!');
+      return;
+    }
+
     try {
       const response = await fetch('/resend-code.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email }),
       });
+      const data = await response.json();
       if (response.ok) {
-        setResendCooldown(30);
-        setError('');
-        setCode(['', '', '', '', '', '']);
+        if (data.status === 'ok') {
+          setResendCooldown(30);
+          setError('');
+          setCode(['', '', '', '', '', '']);
+        } else {
+          setError(data.message || 'Не вдалося надіслати код повторно');
+        }
       } else {
-        setError('Не вдалося надіслати код повторно');
+        setError('Немає зв’язку з сервером');
       }
     } catch (error) {
       setError('Немає зв’язку з сервером');
@@ -138,8 +165,16 @@ const ForgotPassword: React.FC = () => {
       setError('Паролі не збігаються!');
       return;
     }
-    if (newPassword.length > 50) {
-      setError('Пароль не може перевищувати 50 символів!');
+    if (newPassword.length < 8) {
+      setError('Пароль повинен містити щонайменше 8 символів!');
+      return;
+    }
+    if (newPassword.length > 255) {
+      setError('Пароль не може перевищувати 255 символів!');
+      return;
+    }
+    if (!resetKey) {
+      setError('Ключ скидання пароля відсутній!');
       return;
     }
 
@@ -147,10 +182,11 @@ const ForgotPassword: React.FC = () => {
       const response = await fetch('/update-password.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword }),
+        credentials: 'include',
+        body: JSON.stringify({ email, newPassword, reset_key: resetKey }),
       });
+      const data = await response.json();
       if (response.ok) {
-        const data = await response.json();
         if (data.status === 'ok') {
           navigate('/'); // Перенаправлення після успішної зміни пароля
         } else {
@@ -166,7 +202,7 @@ const ForgotPassword: React.FC = () => {
   };
 
   const handleGoogleForgotPassword = async () => {
-    if (!googleUser) {
+    if (!googleIdToken) {
       setError('Спочатку увійдіть через Google');
       return;
     }
@@ -175,12 +211,14 @@ const ForgotPassword: React.FC = () => {
       const response = await fetch('/google-forgot-pass.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: googleUser.email }),
+        credentials: 'include',
+        body: JSON.stringify({ id_token: googleIdToken }),
       });
       const data = await response.json();
       if (response.ok) {
         if (data.status === 'ok') {
           setIsCodeStage(true);
+          setError('');
         } else {
           setError(data.message || 'Помилка відправки');
         }
@@ -195,6 +233,7 @@ const ForgotPassword: React.FC = () => {
 
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
+      setGoogleIdToken(tokenResponse.access_token); // Зберігаємо id_token
       fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: {
           Authorization: `Bearer ${tokenResponse.access_token}`,
@@ -335,7 +374,7 @@ const ForgotPassword: React.FC = () => {
               {error && <div className="error-message">{error}</div>}
               {!isCodeStage && !isPasswordStage && (
                 <button className="ForgotPassword-button" onClick={handleForgotPassword}>
-                  Надіслати посилання
+                  Надіслати код
                 </button>
               )}
               {isPasswordStage && (
