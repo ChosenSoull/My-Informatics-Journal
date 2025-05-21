@@ -211,8 +211,10 @@ $password = 'your_password';
 
 А також сгенеруйне 2 ключа довжиною 32 символи ,і помістить їх у файл в бекенді /utils/encryption.php
 
-define('ENCRYPTION_KEY', '');
-define('HASH_SALT', '');
+```
+define('ENCRYPTION_KEY', 'Сюди перший ключ');
+define('HASH_SALT', 'Сюди другий ключ');
+```
 
 # Запуск додатка
 
