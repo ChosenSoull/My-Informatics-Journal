@@ -17,7 +17,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [isCodeStage, setIsCodeStage] = useState(true);
+  const [isCodeStage, setIsCodeStage] = useState(false);
   const [error, setError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
