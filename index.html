@@ -1,15 +1,41 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="uk">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/assets/icon_dark.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Мій проєкт з інформатики, де я ділюся тим, чому навчився протягом цього навчального року з програмування, алгоритмів та інших тем інформатики.">
-    <meta name="keywords" content="проэкт,інформатика,сайт,дз,домашне завдання,project,computer science,website,dz,homework">
-    <title>Мій проєкт з інформатики</title>
+    <meta name="description" content="Мій проєкт портфоліо з інформатики, де я ділюся тим, чому навчився протягом цього навчального року з програмування, алгоритмів та інших тем інформатики." />
+    <meta name="keywords" content="проэкт,інформатика,сайт,портфоліо,дз,домашне завдання,project,computer science,website,dz,homework" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/png" href="/assets/icon-dark.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/assets/icon_light-192x192.png" />
+    <link rel="canonical" href="https://chosensoul.kesug.com/" />
+    <title>ChosenSoul портфоліо</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Google Analytics -->
+    <script type="module">
+      const GA_TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID || 'G-XXXXXXXXXX';
+
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`;
+      document.head.appendChild(script);
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      const configOptions = {
+        anonymize_ip: true,
+      };
+      if (import.meta.env.DEV) {
+        configOptions.debug_mode = true;
+      }
+
+      gtag('config', GA_TRACKING_ID, configOptions);
+    </script>
   </body>
 </html>

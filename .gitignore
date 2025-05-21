@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+vendor
+credentials.json
+Backend/utils/connection.php
 
 # Editor directories and files
 .vscode/*
