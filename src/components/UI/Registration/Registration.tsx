@@ -27,7 +27,7 @@ const Registration: React.FC = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
   const [googlePassword, setGooglePassword] = useState('');
-  const [googleIdToken, setGoogleIdToken] = useState(''); // Зберігаємо id_token
+  const [googleAccessToken, setGoogleAccessToken] = useState('');
 
   const checkPasswordStrength = (pass: string) => {
     if (pass.length === 0) return '';
@@ -77,7 +77,7 @@ const Registration: React.FC = () => {
 
   const isValidEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email); // Видалено filter_var, використовуємо лише regex
+    return emailRegex.test(email);
   };
 
   const handleRegister = async () => {
@@ -130,7 +130,6 @@ const Registration: React.FC = () => {
       }
     } catch (error) {
       setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
     }
   };
 
@@ -177,7 +176,6 @@ const Registration: React.FC = () => {
       }
     } catch (error) {
       setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
     }
   };
 
@@ -221,7 +219,7 @@ const Registration: React.FC = () => {
   };
 
   const handleGoogleSubmit = async () => {
-    if (!googleIdToken) {
+    if (!googleAccessToken) {
       setError('Спочатку увійдіть через Google');
       return;
     }
@@ -243,7 +241,7 @@ const Registration: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ id_token: googleIdToken, password: googlePassword }),
+        body: JSON.stringify({ access_token: googleAccessToken, password: googlePassword }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -263,7 +261,7 @@ const Registration: React.FC = () => {
 
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
-      setGoogleIdToken(tokenResponse.access_token); // Зберігаємо id_token
+      setGoogleAccessToken(tokenResponse.access_token);
       fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: {
           Authorization: `Bearer ${tokenResponse.access_token}`,
@@ -274,9 +272,8 @@ const Registration: React.FC = () => {
           setGoogleUser(userInfo);
           setError('');
         })
-        .catch((error) => {
+        .catch(() => {
           setError('Помилка при отриманні даних користувача');
-          console.error('Помилка:', error);
         });
     },
     onError: () => {

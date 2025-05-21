@@ -13,7 +13,6 @@ function generateVerificationCode($email) {
     }
 
     try {
-        // Видалення старих кодів
         $stmt = $conn->prepare('DELETE FROM verification_codes WHERE email = ?');
         if (!$stmt) {
             throw new Exception('Помилка підготовки запиту для видалення коду');
@@ -25,7 +24,6 @@ function generateVerificationCode($email) {
         }
         $stmt->close();
 
-        // Збереження нового коду
         $stmt = $conn->prepare('INSERT INTO verification_codes (email, code, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE))');
         if (!$stmt) {
             throw new Exception('Помилка підготовки запиту для вставки коду');
@@ -37,7 +35,6 @@ function generateVerificationCode($email) {
         }
         $stmt->close();
 
-        // Надсилання email
         if (!sendVerificationEmail($email, $code)) {
             throw new Exception('Помилка надсилання email із кодом');
         }
@@ -78,12 +75,10 @@ function verifyCode($email, $code) {
         $storedCode = $result->fetch_assoc()['code'];
         $stmt->close();
 
-        // Безпечне порівняння коду
         if (!hash_equals($storedCode, $code)) {
             return false;
         }
 
-        // Видалення коду після успішної верифікації
         $stmt = $conn->prepare('DELETE FROM verification_codes WHERE email = ?');
         if (!$stmt) {
             throw new Exception('Помилка підготовки запиту для видалення коду');
@@ -112,7 +107,6 @@ function resendCode($email) {
     }
 
     try {
-        // Перевірка наявності активного коду
         $stmt = $conn->prepare('SELECT COUNT(*) as active_codes FROM verification_codes WHERE email = ? AND expires_at > NOW()');
         if (!$stmt) {
             throw new Exception('Помилка підготовки запиту для перевірки активного коду');
@@ -127,10 +121,9 @@ function resendCode($email) {
         $stmt->close();
 
         if ($activeCodes === 0) {
-            return false; // Не відправляємо новий код, якщо активний не існує
+            return false;
         }
 
-        // Видалення старих кодів
         $stmt = $conn->prepare('DELETE FROM verification_codes WHERE email = ?');
         if (!$stmt) {
             throw new Exception('Помилка підготовки запиту для видалення коду');
@@ -142,7 +135,6 @@ function resendCode($email) {
         }
         $stmt->close();
 
-        // Генерація нового коду
         return generateVerificationCode($email);
     } finally {
         if (isset($conn) && $conn) {

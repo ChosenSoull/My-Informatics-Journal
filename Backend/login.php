@@ -37,7 +37,6 @@ try {
     $email = $data['email'] ?? '';
     $password = $data['password'] ?? '';
 
-    // Валідація вхідних даних
     if (empty($email) || empty($password) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255 || strlen($password) > 255) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Невірний email, пароль або їх довжина']);
@@ -46,7 +45,6 @@ try {
 
     $hashedEmail = hashData($email);
 
-    // Перевірка наявності користувача та пароля
     $stmt = $conn->prepare('SELECT password FROM users WHERE email = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -78,7 +76,6 @@ try {
         exit();
     }
 
-    // Генерація та надсилання коду верифікації
     try {
         if (!generateVerificationCode($email)) {
             http_response_code(500);

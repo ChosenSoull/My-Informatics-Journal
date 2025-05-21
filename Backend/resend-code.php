@@ -27,14 +27,12 @@ try {
     $data = json_decode(file_get_contents('php://input'), true);
     $email = $data['email'] ?? '';
 
-    // Повна валідація email
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Невірний або недійсний email']);
         exit();
     }
 
-    // Виклик resendCode з обробкою результату
     if (!resendCode($email)) {
         http_response_code(500);
         echo json_encode(['status' => 'error', 'message' => 'Помилка повторного надсилання коду']);

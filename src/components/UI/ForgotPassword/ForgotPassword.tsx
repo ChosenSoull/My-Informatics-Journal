@@ -15,7 +15,7 @@ const ForgotPassword: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [resetKey, setResetKey] = useState(''); // Зберігаємо reset_key
+  const [resetKey, setResetKey] = useState('');
   const [isCodeStage, setIsCodeStage] = useState(false);
   const [isPasswordStage, setIsPasswordStage] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -24,7 +24,7 @@ const ForgotPassword: React.FC = () => {
   const [error, setError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
-  const [googleIdToken, setGoogleIdToken] = useState(''); // Зберігаємо id_token
+  const [googleAccessToken, setGoogleAccessToken] = useState('');
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -105,7 +105,7 @@ const ForgotPassword: React.FC = () => {
       const data = await response.json();
       if (response.ok) {
         if (data.status === 'verified') {
-          setResetKey(data.reset_key); // Зберігаємо reset_key
+          setResetKey(data.reset_key);
           setIsCodeStage(false);
           setIsPasswordStage(true);
           setError('');
@@ -188,7 +188,7 @@ const ForgotPassword: React.FC = () => {
       const data = await response.json();
       if (response.ok) {
         if (data.status === 'ok') {
-          navigate('/'); // Перенаправлення після успішної зміни пароля
+          navigate('/');
         } else {
           setError(data.message || 'Помилка оновлення пароля');
         }
@@ -202,7 +202,7 @@ const ForgotPassword: React.FC = () => {
   };
 
   const handleGoogleForgotPassword = async () => {
-    if (!googleIdToken) {
+    if (!googleAccessToken) {
       setError('Спочатку увійдіть через Google');
       return;
     }
@@ -212,7 +212,7 @@ const ForgotPassword: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ id_token: googleIdToken }),
+        body: JSON.stringify({ access_token: googleAccessToken }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -233,7 +233,7 @@ const ForgotPassword: React.FC = () => {
 
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
-      setGoogleIdToken(tokenResponse.access_token); // Зберігаємо id_token
+      setGoogleAccessToken(tokenResponse.access_token);
       fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: {
           Authorization: `Bearer ${tokenResponse.access_token}`,
@@ -270,7 +270,6 @@ const ForgotPassword: React.FC = () => {
       <div className="position-container-ForgotPassword">
         <div className="form-container-ForgotPassword">
           {!isCodeStage && !isPasswordStage && <h2>Відновлення пароля</h2>}
-          {/* Показуємо кнопку Google лише на початковому етапі */}
           {!isCodeStage && !isPasswordStage && (
             <button className="google-ForgotPassword" onClick={() => login()}>
               <img
@@ -447,7 +446,6 @@ const ForgotPassword: React.FC = () => {
               )}
             </>
           )}
-          {/* Завжди відображаємо navigation-links внизу */}
           <div className="navigation-links">
             <span onClick={() => navigate('/registration')} className="navigation-link">
               Реєстрація

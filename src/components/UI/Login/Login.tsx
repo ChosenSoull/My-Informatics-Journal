@@ -17,11 +17,11 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [isCodeStage, setIsCodeStage] = useState(false);
+  const [isCodeStage, setIsCodeStage] = useState(true);
   const [error, setError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
-  const [googleIdToken, setGoogleIdToken] = useState(''); // Зберігаємо id_token
+  const [googleAccessToken, setGoogleAccessToken] = useState('');
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const sanitizedValue = sanitizeHtml(e.target.value, {
@@ -163,7 +163,7 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleLogin = async () => {
-    if (!googleIdToken) {
+    if (!googleAccessToken) {
       setError('Спочатку увійдіть через Google');
       return;
     }
@@ -173,7 +173,7 @@ const Login: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ id_token: googleIdToken }),
+        body: JSON.stringify({ access_token: googleAccessToken }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -193,7 +193,7 @@ const Login: React.FC = () => {
 
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
-      setGoogleIdToken(tokenResponse.access_token); // Зберігаємо id_token
+      setGoogleAccessToken(tokenResponse.access_token);
       fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: {
           Authorization: `Bearer ${tokenResponse.access_token}`,
@@ -282,14 +282,6 @@ const Login: React.FC = () => {
               </button>
             </>
           )}
-          <div className="navigation-links">
-            <span onClick={() => navigate('/registration')} className="navigation-link">
-              Реєстрація
-            </span>
-            <span onClick={() => navigate('/forgot-password')} className="navigation-link">
-              Забули пароль?
-            </span>
-          </div>
           {isCodeStage && (
             <div className="code-container">
               <h2>Підтвердження коду</h2>
@@ -323,6 +315,14 @@ const Login: React.FC = () => {
               </button>
             </div>
           )}
+          <div className="navigation-links">
+            <span onClick={() => navigate('/registration')} className="navigation-link">
+              Реєстрація
+            </span>
+            <span onClick={() => navigate('/forgot-password')} className="navigation-link">
+              Забули пароль?
+            </span>
+          </div>
         </div>
       </div>
     </div>

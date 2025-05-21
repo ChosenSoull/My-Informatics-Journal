@@ -21,9 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'utils/connection.php';
-require_once 'vendor/autoload.php'; // Для Google API Client
-use Google_Client;
-use Google_Exception;
 
 $conn = null;
 try {
@@ -35,12 +32,12 @@ try {
     }
 
     $data = json_decode(file_get_contents('php://input'), true);
-    $idToken = $data['id_token'] ?? '';
+    $accessToken = $data['access_token'] ?? '';
     $password = $data['password'] ?? '';
 
-    if (empty($idToken)) {
+    if (empty($accessToken)) {
         http_response_code(400);
-        echo json_encode(['status' => 'error', 'message' => 'ID Token є обов’язковим']);
+        echo json_encode(['status' => 'error', 'message' => 'Access Token є обов’язковим']);
         exit();
     }
     if (empty($password) || strlen($password) > 255) {
@@ -49,20 +46,32 @@ try {
         exit();
     }
 
-    // Ініціалізація Google Client
-    $client = new Google_Client(['client_id' => 'YOUR_GOOGLE_CLIENT_ID']); // Замінити на ваш Client ID
-    $payload = $client->verifyIdToken($idToken);
-    if (!$payload) {
+    $ch = curl_init('https://www.googleapis.com/oauth2/v3/userinfo');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer $accessToken"
+    ]);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || $response === false) {
         http_response_code(401);
-        echo json_encode(['status' => 'error', 'message' => 'Недійсний ID Token']);
+        echo json_encode(['status' => 'error', 'message' => 'Недійсний Access Token']);
         exit();
     }
 
-    $email = $payload['email'] ?? '';
-    $name = $payload['name'] ?? '';
-    $picture = $payload['picture'] ?? '';
+    $userInfo = json_decode($response, true);
+    if (!$userInfo || empty($userInfo['email'])) {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Не вдалося отримати інформацію про користувача']);
+        exit();
+    }
 
-    // Валідація даних
+    $email = $userInfo['email'] ?? '';
+    $name = $userInfo['name'] ?? '';
+    $picture = $userInfo['picture'] ?? '';
+
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Невірний або недійсний email']);
@@ -94,6 +103,12 @@ try {
     $result = $stmt->get_result();
     $stmt->close();
 
+    if ($result->num_rows > 0) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Користувач із таким email уже існує']);
+        exit();
+    }
+
     $uploadDir = 'uploads/avatars/';
     $hash = substr(bin2hex(random_bytes(4)), 0, 8);
     $fileName = $hashedEmail . '_' . $hash . '.png';
@@ -107,11 +122,10 @@ try {
         }
     }
 
-    // Безпечне завантаження аватарки через cURL
     $ch = curl_init($picture);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Таймаут 10 секунд
-    curl_setopt($ch, CURLOPT_MAXFILESIZE, 2 * 1024 * 1024); // Максимум 2 MB
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_MAXFILESIZE, 2 * 1024 * 1024);
     $imageData = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
@@ -122,7 +136,6 @@ try {
         exit();
     }
 
-    // Перевірка MIME-типу
     $finfo = finfo_open();
     $mimeType = finfo_buffer($finfo, $imageData, FILEINFO_MIME_TYPE);
     finfo_close($finfo);
@@ -140,45 +153,24 @@ try {
 
     $avatarUrl = '/uploads/avatars/' . $fileName;
     $loginKey = bin2hex(random_bytes(16));
-    $isVerified = 1; // Автоматично верифіковано через Google
+    $isVerified = 1;
 
-    if ($result->num_rows > 0) {
-        // Оновлення існуючого користувача
-        $stmt = $conn->prepare('UPDATE users SET name = ?, password = ?, avatar = ?, login_key = ?, is_verified = ? WHERE email = ?');
-        if (!$stmt) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
-            unlink($filePath);
-            exit();
-        }
-        $stmt->bind_param('sssisi', $encryptedName, $hashedPassword, $avatarUrl, $loginKey, $isVerified, $hashedEmail);
-        if (!$stmt->execute()) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Помилка оновлення користувача']);
-            $stmt->close();
-            unlink($filePath);
-            exit();
-        }
-        $stmt->close();
-    } else {
-        // Створення нового користувача
-        $stmt = $conn->prepare('INSERT INTO users (name, email, password, avatar, login_key, is_verified) VALUES (?, ?, ?, ?, ?, ?)');
-        if (!$stmt) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
-            unlink($filePath);
-            exit();
-        }
-        $stmt->bind_param('sssisi', $encryptedName, $hashedEmail, $hashedPassword, $avatarUrl, $loginKey, $isVerified);
-        if (!$stmt->execute()) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Помилка створення користувача']);
-            $stmt->close();
-            unlink($filePath);
-            exit();
-        }
-        $stmt->close();
+    $stmt = $conn->prepare('INSERT INTO users (name, email, password, avatar, login_key, is_verified) VALUES (?, ?, ?, ?, ?, ?)');
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка підготовки запиту до бази даних']);
+        unlink($filePath);
+        exit();
     }
+    $stmt->bind_param('sssisi', $encryptedName, $hashedEmail, $hashedPassword, $avatarUrl, $loginKey, $isVerified);
+    if (!$stmt->execute()) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Помилка створення користувача']);
+        $stmt->close();
+        unlink($filePath);
+        exit();
+    }
+    $stmt->close();
 
     setcookie('login-key', $loginKey, [
         'expires' => time() + 3600 * 24 * 30,
@@ -188,8 +180,9 @@ try {
         'samesite' => 'Strict'
     ]);
     http_response_code(200);
-    echo json_encode(['status' => 'ok', 'message' => 'Успішна авторизація']);
+    echo json_encode(['status' => 'ok', 'message' => 'Успішна реєстрація']);
 } catch (Exception $e) {
+    error_log('Помилка: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Внутрішня помилка сервера: ' . $e->getMessage()]);
 } finally {

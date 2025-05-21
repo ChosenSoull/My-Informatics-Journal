@@ -40,14 +40,13 @@ body {
     padding: 0.75rem 1.5rem;
     border-radius: 0.375rem;
     cursor: pointer;
-    transition: background-color 0.3s ease, filter 0.3s ease; /* Добавляем transition для filter */
+    transition: background-color 0.3s ease, filter 0.3s ease;
     border: none;
-    filter: drop-shadow(0 0 0px transparent); /* Изначально тень прозрачная */
+    filter: drop-shadow(0 0 0px transparent);
 }
 
 .error-404-button:hover {
-    
     background-color: #803075;
-    filter: drop-shadow(0 0 0.75rem #803075); /* Тень при наведении */
+    filter: drop-shadow(0 0 0.75rem #803075);
 }
 

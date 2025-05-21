@@ -1,4 +1,3 @@
-/* Глобальные стили */
 html, body {
   margin: 0;
   padding: 0;
@@ -7,52 +6,39 @@ html, body {
   font-family: Arial, sans-serif;
 }
 
-/* Контейнер страницы */
 .container-registration {
-  background-position:  center;
+  background-position: center;
   background-size: cover;
   height: 100vh;
   width: 100vw;
   display: flex;
-  justify-content: flex-end; /* Выравнивание по правому краю */
-  align-items: center; /* Центрирование по вертикали */
+  justify-content: flex-end;
+  align-items: center;
 }
 
-
-@keyframes rotateBoxGlow { /* Изменил название, чтобы отразить изменение */
+@keyframes rotateBoxGlow {
   0% {
-    /* Тени сверху (фиолетовая) и снизу (розовая) - еще ближе */
-    /* offset-x | offset-y | blur-radius | spread-radius */
-    /* Было: 0rem -2rem ..., 0rem 2rem ... */
-    box-shadow: 0rem -0.5rem 1rem 0.1rem #e619c3, /* Фиолетовый, сверху (-2 -> -0.5) */
-                0rem 0.5rem 1rem 0.1rem #7700ff; /* Розовый, снизу (2 -> 0.5) */
+    box-shadow: 0rem -0.5rem 1rem 0.1rem #e619c3,
+                0rem 0.5rem 1rem 0.1rem #7700ff;
   }
   25% {
-    /* Тени справа (фиолетовая) и слева (розовая) - еще ближе */
-    /* Было: 2rem 0rem ..., -2rem 0rem ... */
-    box-shadow: 0rem 0rem 1rem 0.1rem #e619c3, /* Фиолетовый, справа (2 -> 0.5) */
-                -0rem 0rem 1rem 0.1rem #7700ff; /* Розовый, слева (-2 -> -0.5) */
+    box-shadow: 0rem 0rem 1rem 0.1rem #e619c3,
+                -0rem 0rem 1rem 0.1rem #7700ff;
   }
   50% {
-    /* Тени снизу (фиолетовая) и сверху (розовая) - еще ближе */
-    /* Было: 0rem 2rem ..., 0rem -2rem ... */
-     box-shadow: 0rem 0.5rem 1rem 0.1rem #e619c3, /* Фиолетовый, снизу (2 -> 0.5) */
-                0rem -0.5rem 1rem 0.1rem #7700ff; /* Розовый, сверху (-2 -> -0.5) */
+    box-shadow: 0rem 0.5rem 1rem 0.1rem #e619c3,
+                0rem -0.5rem 1rem 0.1rem #7700ff;
   }
   75% {
-    /* Тени слева (фиолетовая) и справа (розовая) - еще ближе */
-    /* Было: -2rem 0rem ..., 2rem 0rem ... */
-     box-shadow: -0rem 0rem 1rem 0.1rem #e619c3, /* Фиолетовый, слева (-2 -> -0.5) */
-                0rem 0rem 1rem 0.1rem #7700ff; /* Розовый, справа (2 -> 0.5) */
+    box-shadow: -0rem 0rem 1rem 0.1rem #e619c3,
+                0rem 0rem 1rem 0.1rem #7700ff;
   }
   100% {
-    /* Возвращаемся к начальному состоянию */
     box-shadow: 0rem -0.5rem 1rem 0.1rem #e619c3,
                 0rem 0.5rem 1rem 0.1rem #7700ff;
   }
 }
 
-/* Контейнер фона для формы */
 .position-container {
   height: 90%;
   width: 45%;
@@ -66,20 +52,18 @@ html, body {
   will-change: box-shadow;
 }
 
-/* Контейнер формы */
 .form-container {
-  width: 85%; /* 70% ширины от viewport */
-  height: 85%; /* 70% высоты от viewport */
+  width: 85%;
+  height: 85%;
   padding: 20px;
   border-radius: 8px;
   color: var(--text-color);
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Центрирование содержимого по вертикали */
-  align-items: center; /* Центрирование содержимого по горизонтали */
+  justify-content: center;
+  align-items: center;
 }
 
-/* Стили для заголовка */
 h2 {
   text-align: center;
   margin-bottom: 30px;
@@ -87,7 +71,6 @@ h2 {
   color: var(--text-color);
 }
 
-/* Кнопка Google */
 .google-login {
   width: 100%;
   padding: 10px;
@@ -97,9 +80,9 @@ h2 {
   border-radius: 15px;
   cursor: pointer;
   margin-bottom: 12px;
-  display: flex; /* Включаем Flexbox */
-  align-items: center; /* Выравниваем элементы по центру по вертикали */
-  justify-content: center; /* Центрируем содержимое (иконка + текст) по горизонтали внутри кнопки */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.3s ease;
   transform: scale(1.0);
 }
@@ -109,19 +92,17 @@ h2 {
 }
 
 .google-icon {
-  width: 20px; /* Adjust size as needed */
-  height: 20px; /* Adjust size as needed */
-  margin-right: 10px; /* Space between icon and text */
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
 }
 
-/* Группа полей */
 .form-group {
   margin-bottom: 15px;
   position: relative;
-  width: 100%; /* Убедимся, что поля занимают всю ширину */
+  width: 100%;
 }
 
-/* Поля ввода */
 .input-field {
   width: 95%;
   padding: 10px;
@@ -139,7 +120,6 @@ h2 {
   transform: scale(1.05);
 }
 
-/* Иконка показа пароля */
 .password-toggle {
   position: absolute;
   right: 20px;
@@ -150,7 +130,6 @@ h2 {
   cursor: pointer;
 }
 
-/* Сила пароля */
 .password-strength {
   display: block;
   font-size: 12px;
@@ -158,7 +137,6 @@ h2 {
   color: #d9534f;
 }
 
-/* Кнопка регистрации */
 .register-button {
   width: 100%;
   padding: 10px;
@@ -201,7 +179,7 @@ h2 {
   background-color: transparent;
   border: 2px solid var(--text-color);
   border-radius: 25px;
-  color:var(--text-color);
+  color: var(--text-color);
   outline: none;
 }
 
@@ -293,28 +271,26 @@ h2 {
   color: white;
 }
 
-/* Контейнер для посилань */
 .navigation-links {
-  display: flex; /* Використовуємо флексбокс */
-  justify-content: space-between; /* Розташовуємо елементи по краях */
-  width: 100%; /* Ширина контейнера */
-  margin-top: 15px; /* Відступ зверху */
-  margin-bottom: 15px; /* Відступ знизу */
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 15px;
+  margin-bottom: 15px;
 }
 
-/* Стиль для текстових посилань */
 .navigation-link {
-  font-size: 14px; /* Розмір шрифту */
-  cursor: pointer; /* Курсор при наведенні */
-  transition: color 0.3s ease; /* Плавна зміна кольору */
-  padding: 5px 10px; /* Внутрішні відступи для кращого вигляду */
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  padding: 5px 10px;
 }
 
 .navigation-link:hover {
-  text-decoration: underline; /* Підкреслення при наведенні */
+  text-decoration: underline;
 }
 
-.resend-button{
+.resend-button {
   padding: 10px;
   background-color: transparent;
   color: var(--text-color);
@@ -326,11 +302,9 @@ h2 {
   margin-top: 10px;
 }
 
-/* Адаптивность для меньших экранов */
 @media (max-width: 767px) {
-  /* Стиль для form-container, который у тебя уже был или должен быть */
   .form-container {
-    width: 90vw; /* Увеличиваем ширину для маленьких экранов */
+    width: 90vw;
     height: auto;
     max-height: 80vh;
     padding: 15px;
@@ -343,10 +317,33 @@ h2 {
   }
 
   .container-registration {
+    height: 100vh;
+    width: 100vw;
     justify-content: center;
   }
 
   .input-field {
     width: 92%;
   }
+
+  .code-container {
+    height: 100%;
+    width: 100%;
+  }
+  
+  .code-input {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 10px;
+    font-size: 1.5rem;
+  }
+
+  .verify-button {
+    width: 85%;
+  }
+
+  h2 {
+    font-size: 2rem;
+  }
+  
 }

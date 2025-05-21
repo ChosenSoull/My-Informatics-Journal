@@ -38,7 +38,6 @@ try {
     $email = $data['email'] ?? '';
     $code = $data['code'] ?? '';
 
-    // Перевірка вхідних даних
     $allowedActions = ['registration', 'login', 'forgot-password'];
     if (empty($action) || !in_array($action, $allowedActions)) {
         http_response_code(400);
@@ -51,7 +50,6 @@ try {
         exit();
     }
 
-    // Перевірка коду верифікації
     if (!verifyCode($email, $code)) {
         http_response_code(401);
         echo json_encode(['status' => 'error', 'message' => 'Недійсний код']);
@@ -60,7 +58,6 @@ try {
 
     $hashedEmail = hashData($email);
 
-    // Перевірка наявності користувача
     $stmt = $conn->prepare('SELECT id, is_verified, login_key FROM users WHERE email = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -88,7 +85,6 @@ try {
     $loginKey = $user['login_key'];
 
     if ($action === 'registration') {
-        // Для registration: оновлюємо is_verified на 1 і видаємо login_key
         if ($isVerified === 1) {
             http_response_code(400);
             echo json_encode(['status' => 'error', 'message' => 'Користувач уже верифікований']);
@@ -122,14 +118,12 @@ try {
         http_response_code(200);
         echo json_encode(['status' => 'verified', 'message' => 'Реєстрація завершена']);
     } elseif ($action === 'login') {
-        // Для login: використовуємо існуючий login_key
         if ($isVerified !== 1) {
             http_response_code(400);
             echo json_encode(['status' => 'error', 'message' => 'Користувач не верифікований']);
             exit();
         }
 
-        // Перевірка, чи є login_key
         if (empty($loginKey)) {
             http_response_code(401);
             echo json_encode(['status' => 'error', 'message' => 'Авторизація не вдалася: ключ доступу відсутній']);
@@ -147,20 +141,16 @@ try {
         http_response_code(200);
         echo json_encode(['status' => 'verified', 'message' => 'Вхід виконано']);
     } elseif ($action === 'forgot-password') {
-        // Для forgot-password: генеруємо 32-значний ключ, хешуємо, зберігаємо в forgot_pass
         if ($isVerified !== 1) {
             http_response_code(400);
             echo json_encode(['status' => 'error', 'message' => 'Користувач не верифікований']);
             exit();
         }
 
-        // Генерація 32-значного ключа зі спеціальними символами
         $resetKey = substr(str_replace(['+', '/', '='], ['@', '#', '$'], base64_encode(random_bytes(24))), 0, 32);
 
-        // Хешування ключа
         $hashedResetKey = password_hash($resetKey, PASSWORD_DEFAULT);
 
-        // Видалення старих ключів
         $stmt = $conn->prepare('DELETE FROM forgot_pass WHERE email = ?');
         if (!$stmt) {
             http_response_code(500);
@@ -176,7 +166,6 @@ try {
         }
         $stmt->close();
 
-        // Збереження нового хешованого ключа
         $stmt = $conn->prepare('INSERT INTO forgot_pass (email, hashed_reset_key, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE))');
         if (!$stmt) {
             http_response_code(500);

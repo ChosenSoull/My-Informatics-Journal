@@ -37,7 +37,6 @@ try {
     $newPassword = $data['newPassword'] ?? '';
     $resetKey = $data['reset_key'] ?? '';
 
-    // Перевірка вхідних даних
     if (empty($email) || empty($newPassword) || empty($resetKey) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255 || strlen($newPassword) > 255) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Невірний формат або відсутні поля']);
@@ -46,7 +45,6 @@ try {
 
     $hashedEmail = hashData($email);
 
-    // Перевірка ключа в таблиці forgot_pass
     $stmt = $conn->prepare('SELECT hashed_reset_key FROM forgot_pass WHERE email = ? AND expires_at > NOW()');
     if (!$stmt) {
         http_response_code(500);
@@ -71,14 +69,12 @@ try {
     $row = $result->fetch_assoc();
     $stmt->close();
 
-    // Перевірка ключа
     if (!password_verify($resetKey, $row['hashed_reset_key'])) {
         http_response_code(401);
         echo json_encode(['status' => 'error', 'message' => 'Недійсний ключ']);
         exit();
     }
 
-    // Видалення ключа після перевірки
     $stmt = $conn->prepare('DELETE FROM forgot_pass WHERE email = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -94,7 +90,6 @@ try {
     }
     $stmt->close();
 
-    // Перевірка наявності користувача
     $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -117,7 +112,6 @@ try {
         exit();
     }
 
-    // Оновлення пароля
     $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
     $loginKey = bin2hex(random_bytes(16));
 
@@ -136,7 +130,6 @@ try {
     }
     $stmt->close();
 
-    // Встановлення кукі
     setcookie('login-key', $loginKey, [
         'expires' => time() + 3600 * 24 * 30,
         'path' => '/',

@@ -31,7 +31,6 @@ try {
         exit();
     }
 
-    // Перевірка автентифікації (loginKey)
     $loginKey = $_COOKIE['login-key'] ?? '';
     if (empty($loginKey) || strlen($loginKey) > 255) {
         http_response_code(401);
@@ -42,7 +41,6 @@ try {
     $data = json_decode(file_get_contents('php://input'), true);
     $username = $data['username'] ?? '';
 
-    // Перевірка вхідних даних (username)
     if (empty($username) || strlen($username) > 255) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Ім’я користувача обов’язкове або занадто довге']);
@@ -51,7 +49,6 @@ try {
 
     $username = htmlspecialchars($username, ENT_QUOTES, 'UTF-8');
 
-    // Отримуємо email користувача
     $stmt = $conn->prepare('SELECT email FROM users WHERE login_key = ?');
     if (!$stmt) {
         http_response_code(500);

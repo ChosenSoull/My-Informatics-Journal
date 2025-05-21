@@ -21,7 +21,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    /* Добавляем поддержку типов для Node.js */
     "types": ["node"]
   },
   "include": ["vite.config.ts"]

@@ -1,9 +1,8 @@
 <?php
-// Ключ шифрування (згенеруйте унікальний ключ для вашого проєкту)
+// Ключ шифрування (згенеруйте унікальний ключ для вашого проєкту) !!!
 define('ENCRYPTION_KEY', '');
 define('HASH_SALT', '');
 
-// Функція шифрування
 function encryptData($data) {
     $key = ENCRYPTION_KEY;
     $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
@@ -11,7 +10,6 @@ function encryptData($data) {
     return base64_encode($encrypted . '::' . $iv);
 }
 
-// Функція дешифрування
 function decryptData($data) {
     $key = ENCRYPTION_KEY;
     list($encrypted_data, $iv) = explode('::', base64_decode($data), 2);

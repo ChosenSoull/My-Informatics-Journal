@@ -30,7 +30,6 @@ try {
         exit();
     }
 
-    // Перевірка автентифікації (loginKey)
     $loginKey = $_COOKIE['login-key'] ?? '';
     if (empty($loginKey) || strlen($loginKey) > 255) {
         http_response_code(401);
@@ -42,7 +41,6 @@ try {
     $currentPassword = $data['currentPassword'] ?? '';
     $newPassword = $data['newPassword'] ?? '';
 
-    // Перевірка вхідних даних
     if (empty($currentPassword) || empty($newPassword)) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Усі поля (поточний та новий пароль) обов’язкові']);
@@ -53,14 +51,13 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'Новий пароль занадто довгий']);
         exit();
     }
-    // Валідація складності нового пароля
+
     if (strlen($newPassword) < 8 || !preg_match('/[0-9]/', $newPassword) || !preg_match('/[a-zA-Z]/', $newPassword)) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Новий пароль має містити щонайменше 8 символів, одну літеру та одну цифру']);
         exit();
     }
 
-    // Отримуємо email та поточний пароль користувача
     $stmt = $conn->prepare('SELECT email, password FROM users WHERE login_key = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -88,14 +85,12 @@ try {
     $storedPasswordHash = $row['password'];
     $stmt->close();
 
-    // Перевірка поточного пароля
     if (!password_verify($currentPassword, $storedPasswordHash)) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Невірний поточний пароль']);
         exit();
     }
 
-    // Хешування нового пароля
     $hashedNewPassword = password_hash($newPassword, PASSWORD_DEFAULT);
 
     $stmt = $conn->prepare('UPDATE users SET password = ? WHERE email = ?');

@@ -32,11 +32,9 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  // Отримуємо clientId з змінних середовища
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   if (!clientId) {
-    console.error('Google Client ID не знайдено. Перевірте .env файл.');
     return <div>Помилка: Google Client ID не налаштовано.</div>;
   }
 

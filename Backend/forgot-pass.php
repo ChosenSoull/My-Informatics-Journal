@@ -35,7 +35,6 @@ try {
     $data = json_decode(file_get_contents('php://input'), true);
     $email = $data['email'] ?? '';
 
-    // Перевірка вхідних даних (email)
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Невірний, відсутній або занадто довгий email']);
@@ -44,7 +43,6 @@ try {
 
     $hashedEmail = hashData($email);
 
-    // Перевірка наявності користувача
     $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -61,14 +59,11 @@ try {
     $result = $stmt->get_result();
     $stmt->close();
 
-    // Завжди повертаємо однакове повідомлення, незалежно від наявності користувача
     if ($result->num_rows === 0) {
-        // Користувача не знайдено, але повертаємо те саме повідомлення для безпеки
         echo json_encode(['status' => 'ok', 'message' => 'Код надіслано, якщо email зареєстровано']);
         exit();
     }
     
-    // Користувач існує, генеруємо та надсилаємо код
     if (!generateVerificationCode($email)) {
         http_response_code(500);
         echo json_encode(['status' => 'error', 'message' => 'Помилка генерації або надсилання коду']);

@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'utils/connection.php';
 require_once 'utils/encryption.php';
-require_once 'vendor/autoload.php'; // Для Google API Client
+require_once 'vendor/autoload.php'; 
 
 use Google_Client;
 use Google_Exception;
@@ -37,26 +37,38 @@ try {
     }
 
     $data = json_decode(file_get_contents('php://input'), true);
-    $idToken = $data['id_token'] ?? '';
+    $accessToken = $data['access_token'] ?? '';
 
-    if (empty($idToken)) {
+    if (empty($accessToken)) {
         http_response_code(400);
-        echo json_encode(['status' => 'error', 'message' => 'ID Token є обов’язковим']);
+        echo json_encode(['status' => 'error', 'message' => 'Access Token є обов’язковим']);
         exit();
     }
 
-    // Верифікація Google ID Token
-    $client = new Google_Client(['client_id' => 'YOUR_GOOGLE_CLIENT_ID']); // Замінити на ваш Client ID
-    $payload = $client->verifyIdToken($idToken);
-    if (!$payload) {
+    $ch = curl_init('https://www.googleapis.com/oauth2/v3/userinfo');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer $accessToken"
+    ]);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || $response === false) {
         http_response_code(401);
-        echo json_encode(['status' => 'error', 'message' => 'Недійсний ID Token']);
+        echo json_encode(['status' => 'error', 'message' => 'Недійсний Access Token']);
         exit();
     }
 
-    $email = $payload['email'] ?? '';
+    $userInfo = json_decode($response, true);
+    if (!$userInfo || empty($userInfo['email'])) {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Не вдалося отримати інформацію про користувача']);
+        exit();
+    }
 
-    // Валідація email із токена
+    $email = $userInfo['email'] ?? '';
+
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Невірний або занадто довгий email у токені']);
@@ -65,7 +77,6 @@ try {
 
     $hashedEmail = hashData($email);
 
-    // Перевірка наявності користувача та отримання login_key
     $stmt = $conn->prepare('SELECT login_key FROM users WHERE email = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -82,25 +93,21 @@ try {
     $result = $stmt->get_result();
     $stmt->close();
 
-    // Якщо користувача немає, повертаємо загальне повідомлення
     if ($result->num_rows === 0) {
         http_response_code(401);
         echo json_encode(['status' => 'error', 'message' => 'Авторизація не вдалася']);
         exit();
     }
 
-    // Отримання login_key
     $row = $result->fetch_assoc();
     $loginKey = $row['login_key'];
 
-    // Перевірка, чи є login_key
     if (empty($loginKey)) {
         http_response_code(401);
         echo json_encode(['status' => 'error', 'message' => 'Авторизація не вдалася: ключ доступу відсутній']);
         exit();
     }
 
-    // Встановлення кукі
     setcookie('login-key', $loginKey, [
         'expires' => time() + 3600 * 24 * 30,
         'path' => '/',

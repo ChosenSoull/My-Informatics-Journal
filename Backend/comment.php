@@ -31,7 +31,6 @@ try {
         exit();
     }
 
-    // Перевірка автентифікації (loginKey)
     $loginKey = $_COOKIE['login-key'] ?? '';
     if (empty($loginKey) || strlen($loginKey) > 255) {
         http_response_code(401);
@@ -42,7 +41,6 @@ try {
     $data = json_decode(file_get_contents('php://input'), true);
     $message = $data['message'] ?? '';
 
-    // Перевірка вхідних даних
     if (empty($message) || strlen($message) > 1000) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Повідомлення обов’язкове або занадто довге']);
@@ -51,7 +49,6 @@ try {
 
     $message = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
 
-    // Отримуємо email користувача
     $stmt = $conn->prepare('SELECT email FROM users WHERE login_key = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -78,7 +75,6 @@ try {
     $hashedEmail = $user['email'];
     $stmt->close();
 
-    // Зберігаємо коментар із email як ідентифікатором користувача
     $stmt = $conn->prepare('INSERT INTO comments (email, message) VALUES (?, ?)');
     if (!$stmt) {
         http_response_code(500);

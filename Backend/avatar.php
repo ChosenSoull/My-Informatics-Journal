@@ -31,7 +31,6 @@ if (!$conn) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json; charset=UTF-8');
 
-    // Перевірка наявності login-key у кукі
     $loginKey = $_COOKIE['login-key'] ?? '';
     if (empty($loginKey) || strlen($loginKey) > 255) {
         http_response_code(401);
@@ -40,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Отримуємо email та поточний аватар користувача
     $stmt = $conn->prepare('SELECT email, avatar FROM users WHERE login_key = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -95,7 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Визначаємо розширення на основі mime-типу
     $extension = ($fileType === 'image/png') ? 'png' : 'jpeg';
     $uploadDir = 'uploads/avatars/';
     $hash = substr(bin2hex(random_bytes(4)), 0, 8);
@@ -114,7 +111,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (move_uploaded_file($file['tmp_name'], $filePath)) {
         $avatarUrl = '/uploads/avatars/' . $fileName;
 
-        // Безпечне видалення старого аватара
         if ($currentAvatarPathFromDB !== '/assets/default_user_icon.png') {
             $oldFileName = basename($currentAvatarPathFromDB);
             $oldFilePath = $uploadDir . $oldFileName;
@@ -127,7 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Оновлюємо запис у базі даних
         $stmt = $conn->prepare('UPDATE users SET avatar = ? WHERE email = ?');
         if (!$stmt) {
             http_response_code(500);
@@ -140,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->execute()) {
             echo json_encode(['status' => 'ok']);
         } else {
-            unlink($filePath); // Видаляємо новий файл, якщо оновлення бази не вдалося
+            unlink($filePath);
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Помилка оновлення аватарки']);
         }
@@ -152,7 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Перевірка наявності login-key у кукі
     $loginKey = $_COOKIE['login-key'] ?? '';
     if (empty($loginKey) || strlen($loginKey) > 255) {
         http_response_code(401);
@@ -186,7 +180,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currentAvatarPathFromDB = $user['avatar'] ?: '/assets/default_user_icon.png';
     $stmt->close();
 
-    // Безпечне отримання шляху до аватара
     $fileName = basename($currentAvatarPathFromDB);
     $filePath = 'uploads/avatars/' . $fileName;
     $realFilePath = realpath($filePath);

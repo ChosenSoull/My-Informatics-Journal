@@ -76,7 +76,6 @@ const MainMenu: React.FC = () => {
     setIsChapterMenuOpen(false);
   };
 
-  // Функція для завантаження інформації про користувача
   const loadUserInfo = async () => {
     try {
       const response = await fetch('/account-info.php', {
@@ -94,7 +93,6 @@ const MainMenu: React.FC = () => {
     }
   };
 
-  // Виклик функції при завантаженні сторінки
   useEffect(() => {
     loadUserInfo();
   }, []);
@@ -136,7 +134,6 @@ const MainMenu: React.FC = () => {
     }
   }, [username, isAccountOpen]);
 
-  // Функція для оновлення коментарів
   useEffect(() => {
     const interval = setInterval(async () => {
       const commentsSection = document.querySelector('.comments-container');
@@ -160,7 +157,80 @@ const MainMenu: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Стани для модальних вікон
+  useEffect(() => {
+    let animationFrameId: number;
+  
+    // Настройки для каждого id (базовый угол наклона)
+    const tiltSettings: { [key: string]: { baseMaxAngleX: number; baseMaxAngleY: number } } = {
+      chapter1: { baseMaxAngleX: 20, baseMaxAngleY: 20 },
+      chapter2: { baseMaxAngleX: 15, baseMaxAngleY: 15 },
+      chapter4: { baseMaxAngleX: 25, baseMaxAngleY: 25 },
+      chapter5_1: { baseMaxAngleX: 20, baseMaxAngleY: 20 },
+      chapter5_2: { baseMaxAngleX: 30, baseMaxAngleY: 30 }, // Индивидуальные параметры для chapter5_2
+      chapter6: { baseMaxAngleX: 20, baseMaxAngleY: 20 },
+    };
+  
+    const handleMouseMove = (e: MouseEvent, element: HTMLDivElement) => {
+      const updateTransform = () => {
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+  
+        const mouseX = e.clientX - centerX;
+        const mouseY = e.clientY - centerY;
+  
+        // Получаем id элемента
+        const elementId = element.id;
+  
+        // Получаем базовые углы для данного id или используем значения по умолчанию
+        const { baseMaxAngleX, baseMaxAngleY } =
+          tiltSettings[elementId] || { baseMaxAngleX: 20, baseMaxAngleY: 20 };
+  
+        // Динамически масштабируем угол наклона в зависимости от размера изображения
+        // Берем ширину и высоту изображения и масштабируем относительно базового размера (например, 200px)
+        const baseSize = 200; // Базовый размер для расчета коэффициента
+        const sizeFactorX = Math.min(rect.width / baseSize, 2); // Ограничиваем максимальный коэффициент до 2
+        const sizeFactorY = Math.min(rect.height / baseSize, 2);
+  
+        // Финальные углы с учетом размера
+        const maxAngleX = baseMaxAngleX * sizeFactorX;
+        const maxAngleY = baseMaxAngleY * sizeFactorY;
+  
+        // Нормализация углов на основе размеров элемента
+        const rotateY = (mouseX / (rect.width / 2)) * maxAngleX;
+        const rotateX = -(mouseY / (rect.height / 2)) * maxAngleY;
+  
+        // Применяем трансформацию только если элемент виден и имеет ненулевые размеры
+        if (rect.width > 0 && rect.height > 0) {
+          element.style.transform = `perspective(500px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) scale(1.05)`;
+        }
+      };
+  
+      animationFrameId = requestAnimationFrame(updateTransform);
+    };
+  
+    const handleMouseLeave = (element: HTMLDivElement) => {
+      cancelAnimationFrame(animationFrameId);
+      element.style.transform = 'perspective(500px) rotateY(0deg) rotateX(0deg) scale(1)';
+    };
+  
+    const chapterImages = document.querySelectorAll('.chapterImage');
+    chapterImages.forEach((element) => {
+      const divElement = element as HTMLDivElement;
+      const moveHandler = (e: MouseEvent) => handleMouseMove(e, divElement);
+  
+      // Убедимся, что событие срабатывает на всей области .chapterImage
+      divElement.addEventListener('mousemove', moveHandler);
+      divElement.addEventListener('mouseleave', () => handleMouseLeave(divElement));
+  
+      // Очистка событий при размонтировании
+      return () => {
+        divElement.removeEventListener('mousemove', moveHandler);
+        divElement.removeEventListener('mouseleave', () => handleMouseLeave(divElement));
+      };
+    });
+  }, []);
+
   const [isChangeAvatarModalOpen, setIsChangeAvatarModalOpen] = useState(false);
   const [isChangeUsernameModalOpen, setIsChangeUsernameModalOpen] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
@@ -172,7 +242,6 @@ const MainMenu: React.FC = () => {
   const cropperRef = useRef<ReactCropperElement>(null);
   const [isCropperReady, setIsCropperReady] = useState(false);
 
-  // Обробники для аватарки
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setAvatarFile(e.target.files[0]);
@@ -236,7 +305,6 @@ const MainMenu: React.FC = () => {
     setIsCropperReady(false);
   };
 
-  // Обробник для "Змінити ім'я"
   const handleChangeUsername = async () => {
     if (!newUsername.trim()) {
       alert('Будь ласка, введіть нове ім’я.');
@@ -262,7 +330,6 @@ const MainMenu: React.FC = () => {
     }
   };
 
-  // Обробник для "Змінити пароль"
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       alert('Будь ласка, заповніть усі поля.');
@@ -293,17 +360,24 @@ const MainMenu: React.FC = () => {
     }
   };
 
-  // Обробник для "Вихід"
-  const handleLogout = () => {
-    localStorage.clear();
-    setIsUserLoggedIn(false);
-    setUsername('Користувач');
-    setAvatarSrc('assets/default_user_icon.png');
-    document.cookie = 'login-key=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=Strict';
-    window.location.reload();
+  const handleLogout = async () => {
+    try {
+      await fetch('/logout.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      localStorage.clear();
+      setIsUserLoggedIn(false);
+      setUsername('Користувач');
+      setAvatarSrc('assets/default_user_icon.png');
+      window.location.reload();
+    } catch (error) {
+      console.error('Помилка при виході з системи:', error);
+    }
   };
 
-  // Обробник для відправки коментаря
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) {
       alert('Будь ласка, введіть коментар.');
@@ -403,6 +477,9 @@ const MainMenu: React.FC = () => {
                 <h2 className="chapter-title">{chapter.title}</h2>
                 {chapter.id === 1 && (
                   <>
+                    <div className="chapterImage" id="chapter1">
+                      <img src="assets/chapter.id1.png" alt="Зображення до глави 1" />
+                    </div>
                     <p>
                       Усе почалося в 2023 році, коли мені було 13 років. Я навчався в 7 класі й уперше зіткнувся з програмуванням. Моїм першим завданням стало створення сайту на HTML і CSS — це було домашнє завдання з інформатики. На платформі «Нові знання» (nz.ua) я побачив це завдання, хоча до того моменту нічим подібним не займався. Я уважно читав інструкції, дивився відеоролики на YouTube і почав вивчати структуру HTML-файлу та базові стилі CSS.
                     </p>
@@ -413,6 +490,9 @@ const MainMenu: React.FC = () => {
                 )}
                 {chapter.id === 2 && (
                   <>
+                    <div className="chapterImage" id="chapter2">
+                      <img src="assets/chapter.id2.png" alt="Зображення до глави 2" />
+                    </div>
                     <p>
                       Через 7 місяців, у 2023 році, мій тато приніс додому старий ноутбук HP Pavilion dv6 2011 року, який йому віддав знайомий. Це був середньобюджетний ноутбук із процесором Pentium B940, 4 ГБ оперативної пам’яті та двома відеокартами: вбудованою HD2000 і дискретною Radeon HD 6490M. Оскільки я був єдиним у сім’ї, хто хоч трохи розбирався в комп’ютерах, ноутбук дістався мені. На ньому не було операційної системи, і я вирішив установити Windows 7, тому що частина драйверів не підтримувала Windows 10.
                     </p>
@@ -433,22 +513,31 @@ const MainMenu: React.FC = () => {
                 )}
                 {chapter.id === 4 && (
                   <>
+                    <div className="chapterImage" id="chapter4">
+                      <img src="assets/chapter.id4.png" alt="Зображення до глави 4" />
+                    </div>
                     <p>
-                      Повернувшись у 2023 рік, я вирішив спробувати себе в ролі програміста. Мені подобалося створювати щось нове, і я вирішив, що програмування — це моє. У 7 класі я почав вивчати основи: спочатку розібрався, де й що використовується, а потім спробував себе в різних сферах. Але часу катастрофично не вистачало: я вставав о 9 ранку, уроки тривали до 14:00, а потім ще було багато домашнього завдання.
+                      Повернувшись у 2023 рік, я вирішив спробувати себе в ролі програміста. Мені подобалося створювати щось нове, і я вирішив, що програмування — це моє. У 7 класі я почав вивчати основи: спочатку розібрався, де й що використовується, а потім спробував себе в різних сферах. Але часу катастрофично не вистачало: я вставав о 9 ранку, уроки тривали до 2 годин дня, а потім ще було багато домашнього завдання.
                     </p>
                     <p>
-                      У 2024 році я вирішив зосередитися тільки на інформатиці та математиці. Уроки проходили віддалено через Google Meet, і я, відкладавши телефон, читав книги з програмування. Тоді я вирішив вивчати веброзробку, доки не знайду те, що мені по-справжньому цікаво. У процесі я дізнався про рух Open Source, Git, GitHub, IDE та інші важливі терміни.
+                      У 2024 році я вирішив зосередитися тільки на інформатиці. Уроки проходили віддалено через Google Meet, і я, відкладавши телефон, читав книги з програмування. Тоді я вирішив вивчати веброзробку, доки не знайду те, що мені по-справжньому цікаво. У процесі я дізнався про рух Open Source, Git, GitHub, IDE та інші важливі терміни.
                     </p>
                   </>
                 )}
                 {chapter.id === 5 && (
                   <>
+                    <div className="chapterImage" id="chapter5_1">
+                      <img src="assets/chapter.id5_1.png" alt="Зображення до глави 5_1" />
+                    </div>
                     <p>
                       Одного разу я вирішив спробувати одне з головних винаходів Open Source — Linux. Ми з моїм другом Микитою Агашковим сиділи в Discord, і я запропонував експеримент: на 2 тижні перейти на Linux. Микита погодився й запропонував парі: якщо я хоч раз перевстановлю Linux на Windows, він виграє 100 грн. Я записав на флешку образ дистрибутива Ubuntu версії 24.04, але установник підтримував тільки UEFI, а мій старий ноутбук його не підтримував. Тоді я вибрав Ubuntu 22.04 і успішно його встановив. Після цього я зіткнувся з незвичним середовищем GNOME: панель зверху, величезне меню програм замість компактного «Пуску» — усе це нагадувало macOS. Я вирішив дослідити альтернативи, такі як KDE, XFCE, LXDE та інші, і з усіх варіантів мені особливо сподобався KDE. Однак Ubuntu не була оптимізована для зміни робочих середовищ, і встановлення KDE не вдалося. Усе ж я вирішив дати шанс GNOME і звикнути, але через 4 дні зрозумів, що мені незручно.
                     </p>
                     <p>
-                      Протягом цих 4 днів мені знадобилися деякі програми Windows, і я встановив Wine — шар сумісності для запуску Windows-програм на Linux. Версія 4.0, стабільна для Ubuntu 22.04, виявилася застарілою (на сайті Wine уже була версія 9.2). Деякі програми не запускалися, і я вирішив спробувати дистрибутив із системою пакетів rolling-release, де всі програми оновлюються до останніх версій.
+                      Протягом цих 4 днів мені знадобилися деякі програми Windows, і я встановив Wine — слой сумісності для запуску Windows-програм на Linux. Версія 4.0, стабільна для Ubuntu 22.04, виявилася застарілою (на сайті Wine уже була версія 9.2). Деякі програми не запускалися, і я вирішив спробувати дистрибутив із системою пакетів rolling-release, де всі програми оновлюються до останніх версій.
                     </p>
+                    <div className="chapterImage" id="chapter5_2">
+                      <img src="assets/chapter.id5_2.png" alt="Зображення до глави 5_2" />
+                    </div>
                     <p>
                       Мій вибір припав на Arch Linux. Багато хто вважає, що його встановлення складне через відсутність графічного інтерфейсу, але для мене воно виявилося простішим, ніж очікувалося. Після тижня налаштування я встановив робоче середовище KDE і необхідні програми: Firefox, Steam, Spotify, Telegram, а також Wine 9.3. Мені знадобився Photoshop CS6 для створення іконок для проєкту, але Adobe не підтримує Linux. За допомогою Wine я запустив Photoshop, і все запрацювало чудово.
                     </p>
@@ -456,6 +545,9 @@ const MainMenu: React.FC = () => {
                 )}
                 {chapter.id === 6 && (
                   <>
+                    <div className="chapterImage" id="chapter6">
+                      <img src="assets/chapter.id6.png" alt="Зображення до глави 6" />
+                    </div>
                     <p>
                       У цей же час я вперше встановив IDE — Visual Studio Code, яким користуюся досі, а також GitHub Desktop для роботи з Git. Тоді я почав свій перший серйозний проєкт, який досі є на GitHub <a href="https://github.com/ChosenSoull/MasterSwordOnline">посилання</a>. Я створював його, щоб перевірити, чому навчився за рік — із 2023 по 2024.
                     </p>
@@ -575,7 +667,7 @@ const MainMenu: React.FC = () => {
                 </div>
                 <div className="contact-info">
                   <img src={themeAssets.emailIcon} alt="Електронна пошта" className="contact-icon" />
-                  <a href="mailto:chosensoul404@gmail.com" className="contact-text">chosensoul404@gmail.com</a>
+                  <a href="mailto:chosensouldev@gmail.com" className="contact-text">chosensouldev@gmail.com</a>
                 </div>
                 <div className="contact-info">
                   <img src={themeAssets.websiteIcon} alt="Вебсайт" className="contact-icon" />

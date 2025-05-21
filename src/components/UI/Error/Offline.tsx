@@ -1,4 +1,3 @@
-// src/components/UI/OfflinePage.tsx
 import React from 'react';
 import './Offline.css';
 

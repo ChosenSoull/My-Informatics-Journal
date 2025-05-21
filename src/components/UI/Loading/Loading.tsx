@@ -1,5 +1,5 @@
 import React from 'react';
-import './Loading.css'; // Создайте этот CSS файл
+import './Loading.css';
 
 const Loading: React.FC = () => {
   return (

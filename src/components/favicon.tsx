@@ -1,8 +1,6 @@
-// Управление favicon с анимацией и кэшированием иконок в base64 формате
 let animationIntervalId: NodeJS.Timeout | null = null;
-const iconCache: { [id: string]: string } = {}; // Кэш для base64 иконок
+const iconCache: { [id: string]: string } = {};
 
-// Иконки с ID для анимации и статичных состояний
 const icons = {
   light: {
     static: { id: 'light_static', url: 'assets/icon-light.png' },
@@ -38,7 +36,6 @@ const icons = {
   },
 };
 
-// Загрузка иконки в base64
 const loadIconToBase64 = async (id: string, url: string): Promise<string> => {
   if (iconCache[id]) {
     return iconCache[id];
@@ -59,11 +56,10 @@ const loadIconToBase64 = async (id: string, url: string): Promise<string> => {
     });
   } catch (error) {
     console.error(error);
-    return url; // Возвращаем исходный URL как запасной вариант
+    return url;
   }
 };
 
-// Остановка анимации
 const stopAnimation = () => {
   if (animationIntervalId) {
     clearInterval(animationIntervalId);
@@ -71,12 +67,10 @@ const stopAnimation = () => {
   }
 };
 
-// Запуск анимации
 const startAnimation = async (link: HTMLLinkElement, frames: { id: string; url: string }[]) => {
   stopAnimation();
   let index = 0;
 
-  // Предзагрузка всех кадров
   const base64Frames = await Promise.all(
     frames.map(async (frame) => await loadIconToBase64(frame.id, frame.url))
   );
@@ -87,7 +81,6 @@ const startAnimation = async (link: HTMLLinkElement, frames: { id: string; url: 
   }, 90); // 90 мс = 11 кадров/с
 };
 
-// Обновление favicon
 const updateFavicon = async (isActive: boolean, theme: 'light' | 'dark') => {
   let faviconLink: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
   if (!faviconLink && document.head) {
@@ -101,7 +94,6 @@ const updateFavicon = async (isActive: boolean, theme: 'light' | 'dark') => {
     return;
   }
 
-  // При светлой теме используем темные иконки, при темной — светлые
   const effectiveTheme = theme === 'light' ? 'dark' : 'light';
 
   if (isActive) {

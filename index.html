@@ -28,11 +28,10 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      // Условная настройка debug_mode
       const configOptions = {
         anonymize_ip: true,
       };
-      if (import.meta.env.DEV) { // Проверяем режим разработки через Vite
+      if (import.meta.env.DEV) {
         configOptions.debug_mode = true;
       }
 

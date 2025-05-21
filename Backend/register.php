@@ -38,7 +38,6 @@ try {
     $email = $data['email'] ?? '';
     $password = $data['password'] ?? '';
 
-    // Валідація вхідних даних
     if (empty($name) || empty($email) || empty($password) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($name) > 255 || strlen($email) > 255 || strlen($password) > 255) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Невірний формат або довжина полів']);
@@ -49,7 +48,6 @@ try {
     $encryptedName = encryptData($name);
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-    // Перевірка наявності користувача
     $stmt = $conn->prepare('SELECT id FROM users WHERE email = ?');
     if (!$stmt) {
         http_response_code(500);
@@ -72,9 +70,8 @@ try {
         exit();
     }
 
-    // Створення непідтвердженого користувача
     $defaultAvatar = '/assets/default_user_icon.png';
-    $isVerified = 0; // За замовчуванням непідтверджений
+    $isVerified = 0;
     $stmt = $conn->prepare('INSERT INTO users (name, email, password, avatar, is_verified) VALUES (?, ?, ?, ?, ?)');
     if (!$stmt) {
         http_response_code(500);
@@ -90,7 +87,6 @@ try {
     }
     $stmt->close();
 
-    // Надсилання коду верифікації
     try {
         if (!generateVerificationCode($email)) {
             http_response_code(500);
