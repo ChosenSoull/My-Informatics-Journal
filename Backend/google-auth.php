@@ -113,28 +113,6 @@ try {
 
     $uploadDir = 'uploads/avatars/';
     $hash = substr(bin2hex(random_bytes(4)), 0, 8);
-    
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_buffer($finfo, $imageData, FILEINFO_MIME_TYPE);
-    finfo_close($finfo);
-    
-    $extensionMap = [
-        'image/png' => 'png',
-        'image/jpeg' => 'jpg',
-        'image/gif' => 'gif',
-        'image/webp' => 'webp'
-    ];
-    $extension = $extensionMap[$mimeType] ?? 'png';
-    $fileName = $hashedEmail . '_' . $hash . '.' . $extension;
-    $filePath = $uploadDir . $fileName;
-
-    if (!is_dir($uploadDir)) {
-        if (!mkdir($uploadDir, 0755, true)) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Помилка створення директорії']);
-            exit();
-        }
-    }
 
     $ch = curl_init($picture);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -150,10 +128,38 @@ try {
         exit();
     }
 
-    if (!in_array($mimeType, ['image/png', 'image/jpeg', 'image/gif', 'image/webp'])) {
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_buffer($finfo, $imageData, FILEINFO_MIME_TYPE);
+    finfo_close($finfo);
+
+    // Логирование MIME-типа для отладки
+    error_log("Detected MIME type: $mimeType");
+
+    $allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/avif'];
+    if (!in_array($mimeType, $allowedTypes)) {
         http_response_code(400);
-        echo json_encode(['status' => 'error', 'message' => 'Недозволений тип аватарки']);
+        echo json_encode(['status' => 'error', 'message' => "Недозволений тип аватарки: $mimeType"]);
         exit();
+    }
+
+    $extensionMap = [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+        'image/bmp' => 'bmp',
+        'image/avif' => 'avif'
+    ];
+    $extension = $extensionMap[$mimeType] ?? 'png';
+    $fileName = $hashedEmail . '_' . $hash . '.' . $extension;
+    $filePath = $uploadDir . $fileName;
+
+    if (!is_dir($uploadDir)) {
+        if (!mkdir($uploadDir, 0755, true)) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Помилка створення директорії']);
+            exit();
+        }
     }
 
     if (file_put_contents($filePath, $imageData) === false) {
