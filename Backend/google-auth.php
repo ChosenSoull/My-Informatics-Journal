@@ -179,7 +179,7 @@ try {
         unlink($filePath);
         exit();
     }
-    $stmt->bind_param('sssisi', $encryptedName, $hashedEmail, $hashedPassword, $avatarUrl, $loginKey, $isVerified);
+    $stmt->bind_param('sssssi', $encryptedName, $hashedEmail, $hashedPassword, $avatarUrl, $loginKey, $isVerified);
     if (!$stmt->execute()) {
         http_response_code(500);
         echo json_encode(['status' => 'error', 'message' => 'Помилка створення користувача']);
