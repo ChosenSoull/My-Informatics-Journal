@@ -21,6 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'utils/connection.php';
+require_once 'utils/encryption.php';
+require_once 'vendor/autoload.php';
 
 $conn = null;
 try {
@@ -111,7 +113,19 @@ try {
 
     $uploadDir = 'uploads/avatars/';
     $hash = substr(bin2hex(random_bytes(4)), 0, 8);
-    $fileName = $hashedEmail . '_' . $hash . '.png';
+    
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_buffer($finfo, $imageData, FILEINFO_MIME_TYPE);
+    finfo_close($finfo);
+    
+    $extensionMap = [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp'
+    ];
+    $extension = $extensionMap[$mimeType] ?? 'png';
+    $fileName = $hashedEmail . '_' . $hash . '.' . $extension;
     $filePath = $uploadDir . $fileName;
 
     if (!is_dir($uploadDir)) {
@@ -136,10 +150,7 @@ try {
         exit();
     }
 
-    $finfo = finfo_open();
-    $mimeType = finfo_buffer($finfo, $imageData, FILEINFO_MIME_TYPE);
-    finfo_close($finfo);
-    if (!in_array($mimeType, ['image/png', 'image/jpeg'])) {
+    if (!in_array($mimeType, ['image/png', 'image/jpeg', 'image/gif', 'image/webp'])) {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Недозволений тип аватарки']);
         exit();

@@ -262,13 +262,23 @@ const MainMenu: React.FC = () => {
     }
 
     try {
+      // Определяем MIME-тип и расширение на основе исходного файла
+      const mimeType = avatarFile?.type || 'image/png';
+      const extensionMap: { [key: string]: string } = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/gif': 'gif',
+        'image/webp': 'webp'
+      };
+      const extension = extensionMap[mimeType] || 'png';
+
       cropperInstance.getCroppedCanvas({
         width: 200,
         height: 200,
       }).toBlob(async (blob) => {
         if (blob) {
           const formData = new FormData();
-          formData.append('avatar', blob, 'avatar.png');
+          formData.append('avatar', blob, `avatar.${extension}`);
           try {
             const response = await fetch('/avatar.php', {
               method: 'POST',
@@ -280,6 +290,7 @@ const MainMenu: React.FC = () => {
               setAvatarFile(null);
               setIsCropperReady(false);
               setAvatarSrc('/avatar.php');
+              window.location.reload(); // Перезагрузка страницы после успешной загрузки
             } else {
               console.error('Помилка завантаження аватара:', response.status, response.statusText);
               alert(`Помилка завантаження аватара: ${response.statusText}`);
@@ -292,7 +303,7 @@ const MainMenu: React.FC = () => {
           console.error('Не вдалося отримати Blob з обрізаного зображення.');
           alert('Не вдалося обробити зображення для завантаження.');
         }
-      }, 'image/png', 0.9);
+      }, mimeType, 0.9);
     } catch (canvasError) {
       console.error('Помилка при отриманні canvas з Cropper:', canvasError);
       alert('Виникла помилка при обробці зображення.');
@@ -517,7 +528,7 @@ const MainMenu: React.FC = () => {
                       <img src="assets/chapter.id4.jpg" alt="Зображення до глави 4" />
                     </div>
                     <p>
-                      Повернувшись у 2023 рік, я вирішив спробувати себе в ролі програміста. Мені подобалося створювати щось нове, і я вирішив, що програмування — це моє. У 7 класі я почав вивчати основи: спочатку розібрався, де й що використовується, а потім спробував себе в різних сферах. Але часу катастрофично не вистачало: я вставав о 9 ранку, уроки тривали до 2 годин дня, а потім ще було багато домашнього завдання.
+                      Повернувшись у 2023 рік, я вирішив спробувати себе в ролі програміста. Мені подобалося створювати щось нове, і я вирішив, що програмування — це моє. У 7 класі я почав вивчати основи: спочатку розібрався, де й що використовується, а потім спробував себе в різних сферах. Але часу катастрофічно не вистачало: я вставав о 9 ранку, уроки тривали до 2 годин дня, а потім ще було багато домашнього завдання.
                     </p>
                     <p>
                       У 2024 році я вирішив зосередитися тільки на інформатиці. Уроки проходили віддалено через Google Meet, і я, відкладавши телефон, читав книги з програмування. Тоді я вирішив вивчати веброзробку, доки не знайду те, що мені по-справжньому цікаво. У процесі я дізнався про рух Open Source, Git, GitHub, IDE та інші важливі терміни.
@@ -687,7 +698,7 @@ const MainMenu: React.FC = () => {
             <label htmlFor="avatar-input" className="custom-file-button">
               {avatarFile ? 'Вибрати інше зображення' : 'Вибрати зображення'}
             </label>
-            <input id="avatar-input" type="file" accept="image/*" onChange={handleAvatarChange} className="file-input" />
+            <input id="avatar-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={handleAvatarChange} className="file-input" />
             {avatarFile && (
               <div className="cropper-container">
                 <Cropper

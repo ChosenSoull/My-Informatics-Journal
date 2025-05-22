@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    $allowedTypes = ['image/png', 'image/jpeg'];
+    $allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
     $fileType = mime_content_type($file['tmp_name']);
     if (!in_array($fileType, $allowedTypes)) {
         http_response_code(400);
@@ -93,7 +93,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    $extension = ($fileType === 'image/png') ? 'png' : 'jpeg';
+    $extensionMap = [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp'
+    ];
+    $extension = $extensionMap[$fileType] ?? 'png';
     $uploadDir = 'uploads/avatars/';
     $hash = substr(bin2hex(random_bytes(4)), 0, 8);
     $fileName = $hashedEmail . '_' . $hash . '.' . $extension;
@@ -185,7 +191,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $realFilePath = realpath($filePath);
 
     if ($realFilePath && strpos($realFilePath, realpath('uploads/avatars/')) === 0 && file_exists($realFilePath)) {
-        header('Content-Type: image/' . (pathinfo($realFilePath, PATHINFO_EXTENSION) === 'png' ? 'png' : 'jpeg'));
+        $extension = pathinfo($realFilePath, PATHINFO_EXTENSION);
+        $mimeMap = [
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp'
+        ];
+        $contentType = $mimeMap[$extension] ?? 'image/png';
+        header('Content-Type: ' . $contentType);
         readfile($realFilePath);
     } else {
         header('Content-Type: image/png');
