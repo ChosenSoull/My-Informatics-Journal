@@ -40,8 +40,8 @@ const Login: React.FC = () => {
     : theme === 'light' ? '/assets/hide-dark.png' : '/assets/hide-light.png';
 
   const containerBackground = theme === 'light'
-    ? '/assets/page-bg-light.png'
-    : '/assets/page-bg-dark.png';
+    ? '/assets/page-bg-light.jpg'
+    : '/assets/page-bg-dark.jpg';
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -318,6 +318,9 @@ const Login: React.FC = () => {
           <div className="navigation-links">
             <span onClick={() => navigate('/registration')} className="navigation-link">
               Реєстрація
+            </span>
+            <span onClick={() => navigate('/')} className="navigation-link">
+              Головна сторінка
             </span>
             <span onClick={() => navigate('/forgot-password')} className="navigation-link">
               Забули пароль?

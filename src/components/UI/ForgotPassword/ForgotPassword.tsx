@@ -35,8 +35,8 @@ const ForgotPassword: React.FC = () => {
     : theme === 'light' ? '/assets/hide-dark.png' : '/assets/hide-light.png';
 
   const containerBackground = theme === 'light'
-    ? '/assets/page-bg-light.png'
-    : '/assets/page-bg-dark.png';
+    ? '/assets/page-bg-light.jpg'
+    : '/assets/page-bg-dark.jpg';
 
   const handleForgotPassword = async () => {
     if (!email) {
@@ -449,6 +449,9 @@ const ForgotPassword: React.FC = () => {
           <div className="navigation-links">
             <span onClick={() => navigate('/registration')} className="navigation-link">
               Реєстрація
+            </span>
+            <span onClick={() => navigate('/')} className="navigation-link">
+              Головна сторінка
             </span>
             <span onClick={() => navigate('/login')} className="navigation-link">
               Вхід

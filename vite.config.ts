@@ -36,30 +36,33 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         manifest: manifest,
         workbox: {
-          maximumFileSizeToCacheInBytes: 10485760,
-          globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2}'],
+          globPatterns: ['**/*.{ico,png,jpg,jpeg,svg,woff,woff2}'],
           runtimeCaching: [
             {
               urlPattern: ({ request }) => request.mode === 'navigate',
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'pages',
-                networkTimeoutSeconds: 3,
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
+                networkTimeoutSeconds: 3
+              }
             },
             {
-              urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|css|js|woff|woff2|ttf|otf)$/i,
+              urlPattern: /\.(?:html|css|js)$/i,
+              handler: 'NetworkOnly',
+              options: {
+                cacheName: 'no-cache'
+              }
+            },
+            {
+              urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|otf)$/i,
               handler: 'CacheFirst',
               options: {
                 cacheName: 'assets',
                 expiration: {
                   maxEntries: 100,
-                  maxAgeSeconds: 30 * 24 * 60 * 60,
-                },
-              },
+                  maxAgeSeconds: 7 * 24 * 60 * 60
+                }
+              }
             },
             {
               urlPattern: '/offline',
@@ -67,14 +70,14 @@ export default defineConfig(({ mode }) => {
               options: {
                 cacheName: 'offline-page',
                 expiration: {
-                  maxEntries: 1,
-                },
-              },
-            },
+                  maxEntries: 1
+                }
+              }
+            }
           ],
           navigateFallback: '/offline',
           navigateFallbackDenylist: [/^\/offline$/],
-        },
+        }
       }),
     ],
     define: {

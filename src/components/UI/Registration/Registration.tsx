@@ -72,8 +72,8 @@ const Registration: React.FC = () => {
     : theme === 'light' ? '/assets/hide-dark.png' : '/assets/hide-light.png';
 
   const containerBackground = theme === 'light'
-    ? '/assets/page-bg-light.png'
-    : '/assets/page-bg-dark.png';
+    ? '/assets/page-bg-light.jpg'
+    : '/assets/page-bg-dark.jpg';
 
   const isValidEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -389,6 +389,9 @@ const Registration: React.FC = () => {
               <div className="navigation-links">
                 <span onClick={() => navigate('/login')} className="navigation-link">
                   Вхід
+                </span>
+                <span onClick={() => navigate('/')} className="navigation-link">
+                  Головна сторінка
                 </span>
                 <span onClick={() => navigate('/forgot-password')} className="navigation-link">
                   Забули пароль?
