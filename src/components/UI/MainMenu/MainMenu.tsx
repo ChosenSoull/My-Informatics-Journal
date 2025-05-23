@@ -580,17 +580,6 @@ const MainMenu: React.FC = () => {
               </section>
             ))}
             <div className="comments-container">
-              <div className="comments-list">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="comment">
-                    <img src={comment.avatar} alt={comment.name} className="comment-avatar" />
-                    <div className="comment-body">
-                      <span className="comment-name">{comment.name}</span>
-                      <p className="comment-message" dangerouslySetInnerHTML={{ __html: sanitizeHtml(comment.message) }}></p>
-                    </div>
-                  </div>
-                ))}
-              </div>
               {isUserLoggedIn ? (
                 <div className="comment-input-area">
                   <textarea
@@ -604,6 +593,17 @@ const MainMenu: React.FC = () => {
                   </button>
                 </div>
               ) : null}
+              <div className="comments-list">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="comment">
+                    <img src={comment.avatar} alt={comment.name} className="comment-avatar" />
+                    <div className="comment-body">
+                      <span className="comment-name">{comment.name}</span>
+                      <p className="comment-message" dangerouslySetInnerHTML={{ __html: sanitizeHtml(comment.message) }}></p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
