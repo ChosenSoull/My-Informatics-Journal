@@ -19,14 +19,17 @@ import React, { useState, useContext, useEffect } from 'react';
 import { ThemeContext } from '../theme';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './ForgotPassword.css';
 import sanitizeHtml from 'sanitize-html';
+import { getCurrentLanguage } from '../../../i18n';
 
 interface GoogleUser {
   email: string;
 }
 
 const ForgotPassword: React.FC = () => {
+  const { t } = useTranslation();
   const { theme } = useContext(ThemeContext);
   const navigate = useNavigate();
 
@@ -57,11 +60,11 @@ const ForgotPassword: React.FC = () => {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      setError('Електронна пошта повинна бути заповнена!');
+      setError(t('email_required-forgotpass'));
       return;
     }
     if (email.length > 255) {
-      setError('Електронна пошта не може перевищувати 255 символів!');
+      setError(t('email_too_long-forgotpass'));
       return;
     }
 
@@ -78,14 +81,14 @@ const ForgotPassword: React.FC = () => {
           setIsCodeStage(true);
           setError('');
         } else {
-          setError(data.message || 'Помилка відправки');
+          setError(data.message || t('send_error-forgotpass'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-forgotpass'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
+      setError(t('no_server_connection-forgotpass'));
+      console.error(t('network_error_console-forgotpass'), error);
     }
   };
 
@@ -108,7 +111,7 @@ const ForgotPassword: React.FC = () => {
   const handleCodeSubmit = async () => {
     const codeString = code.join('');
     if (codeString.length !== 6) {
-      setError('Введіть 6-значний код');
+      setError(t('enter_six_digit_code-forgotpass'));
       return;
     }
 
@@ -127,24 +130,24 @@ const ForgotPassword: React.FC = () => {
           setIsPasswordStage(true);
           setError('');
         } else {
-          setError(data.message || 'Невірний код підтвердження');
+          setError(data.message || t('invalid_verification_code-forgotpass'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-forgotpass'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
+      setError(t('no_server_connection-forgotpass'));
+      console.error(t('network_error_console-forgotpass'), error);
     }
   };
 
   const handleResendCode = async () => {
     if (!email) {
-      setError('Електронна пошта повинна бути заповнена!');
+      setError(t('email_required-forgotpass'));
       return;
     }
     if (email.length > 255) {
-      setError('Електронна пошта не може перевищувати 255 символів!');
+      setError(t('email_too_long-forgotpass'));
       return;
     }
 
@@ -162,36 +165,36 @@ const ForgotPassword: React.FC = () => {
           setError('');
           setCode(['', '', '', '', '', '']);
         } else {
-          setError(data.message || 'Не вдалося надіслати код повторно');
+          setError(data.message || t('resend_code_failed-forgotpass'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-forgotpass'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка при повторному надсиланні:', error);
+      setError(t('no_server_connection-forgotpass'));
+      console.error(t('resend_error_console-forgotpass'), error);
     }
   };
 
   const handlePasswordSubmit = async () => {
     if (!newPassword || !confirmNewPassword) {
-      setError('Усі поля повинні бути заповнені!');
+      setError(t('all_fields_required-forgotpass'));
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      setError('Паролі не збігаються!');
+      setError(t('passwords_do_not_match-forgotpass'));
       return;
     }
     if (newPassword.length < 8) {
-      setError('Пароль повинен містити щонайменше 8 символів!');
+      setError(t('password_too_short-forgotpass'));
       return;
     }
     if (newPassword.length > 255) {
-      setError('Пароль не може перевищувати 255 символів!');
+      setError(t('password_too_long-forgotpass'));
       return;
     }
     if (!resetKey) {
-      setError('Ключ скидання пароля відсутній!');
+      setError(t('reset_key_missing-forgotpass'));
       return;
     }
 
@@ -207,20 +210,20 @@ const ForgotPassword: React.FC = () => {
         if (data.status === 'ok') {
           navigate('/');
         } else {
-          setError(data.message || 'Помилка оновлення пароля');
+          setError(data.message || t('password_update_error-forgotpass'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-forgotpass'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
+      setError(t('no_server_connection-forgotpass'));
+      console.error(t('network_error_console-forgotpass'), error);
     }
   };
 
   const handleGoogleForgotPassword = async () => {
     if (!googleAccessToken) {
-      setError('Спочатку увійдіть через Google');
+      setError(t('google_login_required-forgotpass'));
       return;
     }
 
@@ -237,14 +240,14 @@ const ForgotPassword: React.FC = () => {
           setIsCodeStage(true);
           setError('');
         } else {
-          setError(data.message || 'Помилка відправки');
+          setError(data.message || t('send_error-forgotpass'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-forgotpass'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
+      setError(t('no_server_connection-forgotpass'));
+      console.error(t('network_error_console-forgotpass'), error);
     }
   };
 
@@ -263,12 +266,12 @@ const ForgotPassword: React.FC = () => {
           setError('');
         })
         .catch((error) => {
-          setError('Помилка при отриманні даних користувача');
-          console.error('Помилка:', error);
+          setError(t('google_user_info_error-forgotpass'));
+          console.error(t('error_console-forgotpass'), error);
         });
     },
     onError: () => {
-      setError('Помилка авторизації через Google');
+      setError(t('google_auth_error-forgotpass'));
     },
     scope: 'email',
   });
@@ -286,26 +289,26 @@ const ForgotPassword: React.FC = () => {
     <div className="container-ForgotPassword" style={{ backgroundImage: `url('${containerBackground}')` }}>
       <div className="position-container-ForgotPassword">
         <div className="form-container-ForgotPassword">
-          {!isCodeStage && !isPasswordStage && <h2>Відновлення пароля</h2>}
+          {!isCodeStage && !isPasswordStage && <h2>{t('forgot_password_title-forgotpass')}</h2>}
           {!isCodeStage && !isPasswordStage && (
             <button className="google-ForgotPassword" onClick={() => login()}>
               <img
                 src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
-                alt="Google icon"
+                alt={t('google_icon_alt-forgotpass')}
                 className="google-icon"
               />
-              Відновити за допомогою Google
+              {t('google_forgot_password-forgotpass')}
             </button>
           )}
           {googleUser ? (
             <div className="google-user-info">
               {isPasswordStage ? (
                 <div className="password-container">
-                  <h2>Задай новий пароль</h2>
+                  <h2>{t('set_new_password_title-forgotpass')}</h2>
                   <div className="form-group">
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Новий пароль"
+                      placeholder={t('new_password_placeholder-forgotpass')}
                       value={newPassword}
                       onChange={(e) => setNewPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
@@ -313,7 +316,7 @@ const ForgotPassword: React.FC = () => {
                     {newPassword.length > 0 && (
                       <img
                         src={passwordIconSrc}
-                        alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                        alt={showPassword ? t('hide_password_alt-forgotpass') : t('show_password_alt-forgotpass')}
                         className="password-toggle"
                         onClick={togglePasswordVisibility}
                       />
@@ -322,7 +325,7 @@ const ForgotPassword: React.FC = () => {
                   <div className="form-group">
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Повторити новий пароль"
+                      placeholder={t('confirm_new_password_placeholder-forgotpass')}
                       value={confirmNewPassword}
                       onChange={(e) => setConfirmNewPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
@@ -330,13 +333,13 @@ const ForgotPassword: React.FC = () => {
                   </div>
                   {error && <div className="error-message">{error}</div>}
                   <button className="ForgotPassword-button" onClick={handlePasswordSubmit}>
-                    Зберегти
+                    {t('save_button-forgotpass')}
                   </button>
                 </div>
               ) : isCodeStage ? (
                 <div className="code-container">
-                  <h2>Підтвердження коду</h2>
-                  <p>Введіть 6-значний код, відправлений на {googleUser.email}</p>
+                  <h2>{t('code_verification_title-forgotpass')}</h2>
+                  <p>{t('enter_code_message-forgotpass', { email: googleUser.email })}</p>
                   <div className="code-inputs">
                     {code.map((digit, index) => (
                       <input
@@ -353,7 +356,7 @@ const ForgotPassword: React.FC = () => {
                   </div>
                   {error && <div className="error-message">{error}</div>}
                   <button className="verify-button" onClick={handleCodeSubmit}>
-                    Підтвердити
+                    {t('verify_button-forgotpass')}
                   </button>
                   <button
                     className="resend-button"
@@ -361,15 +364,15 @@ const ForgotPassword: React.FC = () => {
                     disabled={resendCooldown > 0}
                   >
                     {resendCooldown > 0
-                      ? `Надіслати повторно через ${resendCooldown} сек`
-                      : 'Надіслати код повторно'}
+                      ? t('resend_code_cooldown-forgotpass', { seconds: resendCooldown })
+                      : t('resend_code_button-forgotpass')}
                   </button>
                 </div>
               ) : (
                 <>
                   {error && <div className="error-message">{error}</div>}
                   <button className="ForgotPassword-button" onClick={handleGoogleForgotPassword}>
-                    Надіслати код
+                    {t('send_code_button-forgotpass')}
                   </button>
                 </>
               )}
@@ -380,7 +383,7 @@ const ForgotPassword: React.FC = () => {
                 <div className="form-group">
                   <input
                     type="email"
-                    placeholder="Електронна пошта"
+                    placeholder={t('email_placeholder-forgotpass')}
                     value={email}
                     onChange={(e) => setEmail(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                     className="input-field"
@@ -390,16 +393,16 @@ const ForgotPassword: React.FC = () => {
               {error && <div className="error-message">{error}</div>}
               {!isCodeStage && !isPasswordStage && (
                 <button className="ForgotPassword-button" onClick={handleForgotPassword}>
-                  Надіслати код
+                  {t('send_code_button-forgotpass')}
                 </button>
               )}
               {isPasswordStage && (
                 <div className="password-container">
-                  <h2>Задай новий пароль</h2>
+                  <h2>{t('set_new_password_title-forgotpass')}</h2>
                   <div className="form-group">
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Новий пароль"
+                      placeholder={t('new_password_placeholder-forgotpass')}
                       value={newPassword}
                       onChange={(e) => setNewPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
@@ -407,7 +410,7 @@ const ForgotPassword: React.FC = () => {
                     {newPassword.length > 0 && (
                       <img
                         src={passwordIconSrc}
-                        alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                        alt={showPassword ? t('hide_password_alt-forgotpass') : t('show_password_alt-forgotpass')}
                         className="password-toggle"
                         onClick={togglePasswordVisibility}
                       />
@@ -416,7 +419,7 @@ const ForgotPassword: React.FC = () => {
                   <div className="form-group">
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Повторити новий пароль"
+                      placeholder={t('confirm_new_password_placeholder-forgotpass')}
                       value={confirmNewPassword}
                       onChange={(e) => setConfirmNewPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
@@ -424,14 +427,14 @@ const ForgotPassword: React.FC = () => {
                   </div>
                   {error && <div className="error-message">{error}</div>}
                   <button className="ForgotPassword-button" onClick={handlePasswordSubmit}>
-                    Зберегти
+                    {t('save_button-forgotpass')}
                   </button>
                 </div>
               )}
               {isCodeStage && (
                 <div className="code-container">
-                  <h2>Підтвердження коду</h2>
-                  <p>Введіть 6-значний код, відправлений на {email}</p>
+                  <h2>{t('code_verification_title-forgotpass')}</h2>
+                  <p>{t('enter_code_message-forgotpass', { email })}</p>
                   <div className="code-inputs">
                     {code.map((digit, index) => (
                       <input
@@ -448,7 +451,7 @@ const ForgotPassword: React.FC = () => {
                   </div>
                   {error && <div className="error-message">{error}</div>}
                   <button className="verify-button" onClick={handleCodeSubmit}>
-                    Підтвердити
+                    {t('verify_button-forgotpass')}
                   </button>
                   <button
                     className="resend-button"
@@ -456,22 +459,22 @@ const ForgotPassword: React.FC = () => {
                     disabled={resendCooldown > 0}
                   >
                     {resendCooldown > 0
-                      ? `Надіслати повторно через ${resendCooldown} сек`
-                      : 'Надіслати код повторно'}
+                      ? t('resend_code_cooldown-forgotpass', { seconds: resendCooldown })
+                      : t('resend_code_button-forgotpass')}
                   </button>
                 </div>
               )}
             </>
           )}
           <div className="navigation-links">
-            <span onClick={() => navigate('/registration')} className="navigation-link">
-              Реєстрація
+            <span onClick={() => navigate(`/${getCurrentLanguage()}/registration`)} className="navigation-link">
+              {t('registration_link-forgotpass')}
             </span>
-            <span onClick={() => navigate('/')} className="navigation-link">
-              Головна сторінка
+            <span onClick={() => navigate(`/${getCurrentLanguage()}/`)} className="navigation-link">
+              {t('home_link-forgotpass')}
             </span>
-            <span onClick={() => navigate('/login')} className="navigation-link">
-              Вхід
+            <span onClick={() => navigate(`/${getCurrentLanguage()}/login`)} className="navigation-link">
+              {t('login_link-forgotpass')}
             </span>
           </div>
         </div>

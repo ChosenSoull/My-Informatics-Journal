@@ -15,13 +15,15 @@
  / You should have received a copy of the GNU General Public License
  / along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ThemeProvider } from './components/UI/theme';
 import Error404 from './components/UI/Error/Error404';
 import OfflinePage from './components/UI/Error/Offline';
 import Loading from './components/UI/Loading/Loading';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import './i18n';
 import './App.css';
 
 const MainMenu = lazy(() => import('./components/UI/MainMenu/MainMenu'));
@@ -29,17 +31,91 @@ const Registration = lazy(() => import('./components/UI/Registration/Registratio
 const Login = lazy(() => import('./components/UI/Login/Login'));
 const ForgotPassword = lazy(() => import('./components/UI/ForgotPassword/ForgotPassword'));
 
+const LanguageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { lang } = useParams<{ lang: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { i18n } = useTranslation();
+  const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
+  const [hasLanguageChanged, setHasLanguageChanged] = useState(false);
+
+  useEffect(() => {
+    const storedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    const validLanguages = ['ru', 'uk', 'en'];
+    const defaultLang = 'uk';
+
+    if (storedLanguage && storedLanguage !== lang && !hasLanguageChanged) {
+      const path = location.pathname.split('/').slice(2).join('/') || '';
+      navigate(`/${storedLanguage}/${path}`, { replace: true });
+      setHasLanguageChanged(true);
+      return;
+    }
+
+    if (!lang || !validLanguages.includes(lang)) {
+      const path = location.pathname.split('/').slice(2).join('/') || '';
+      navigate(`/${defaultLang}/${path}`, { replace: true });
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, defaultLang);
+    } else {
+      if (i18n.language !== lang) {
+        i18n.changeLanguage(lang);
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+      }
+    }
+  }, [lang, location.pathname, navigate, i18n, hasLanguageChanged]);
+
+  return <>{children}</>;
+};
+
 const AppContent: React.FC = () => {
   return (
     <div className="app-container">
       <div className="main-content">
         <Suspense fallback={<Loading />}>
           <Routes>
-            <Route index element={<MainMenu />} />
-            <Route path="registration" element={<Registration />} />
-            <Route path="login" element={<Login />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
-            <Route path="offline" element={<OfflinePage />} />
+            <Route path="/:lang">
+              <Route
+                index
+                element={
+                  <LanguageWrapper>
+                    <MainMenu />
+                  </LanguageWrapper>
+                }
+              />
+              <Route
+                path="registration"
+                element={
+                  <LanguageWrapper>
+                    <Registration />
+                  </LanguageWrapper>
+                }
+              />
+              <Route
+                path="login"
+                element={
+                  <LanguageWrapper>
+                    <Login />
+                  </LanguageWrapper>
+                }
+              />
+              <Route
+                path="forgot-password"
+                element={
+                  <LanguageWrapper>
+                    <ForgotPassword />
+                  </LanguageWrapper>
+                }
+              />
+              <Route
+                path="offline"
+                element={
+                  <LanguageWrapper>
+                    <OfflinePage />
+                  </LanguageWrapper>
+                }
+              />
+              <Route path="*" element={<Error404 />} />
+            </Route>
+            <Route path="/" element={<Navigate to="/uk" replace />} />
             <Route path="*" element={<Error404 />} />
           </Routes>
         </Suspense>
