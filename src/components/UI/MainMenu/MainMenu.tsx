@@ -16,6 +16,7 @@
  / along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 import React, { useContext, useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ThemeContext } from '../theme';
 import { useNavigate } from 'react-router-dom';
 import './MainMenu.css';
@@ -23,7 +24,7 @@ import Cropper, { type ReactCropperElement } from 'react-cropper';
 import 'cropperjs/dist/cropper.css';
 import sanitizeHtml from 'sanitize-html';
 import { Registration_Path } from '../transition';
-
+import { getCurrentLanguage } from '../../../i18n';
 
 interface Comment {
   id: number;
@@ -33,29 +34,32 @@ interface Comment {
 }
 
 const MainMenu: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useContext(ThemeContext);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isChapterMenuOpen, setIsChapterMenuOpen] = useState(false);
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [isScrollButtonVisible, setIsScrollButtonVisible] = useState(false);
-  const [username, setUsername] = useState('Користувач');
+  const [username, setUsername] = useState(t('account_default_username'));
   const accountNameRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const languageMenuRef = useRef<HTMLDivElement>(null);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
-  const [avatarSrc, setAvatarSrc] = useState('assets/default_user_icon.png');
+  const [avatarSrc, setAvatarSrc] = useState('/assets/default_user_icon.png');
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
 
   const navigate = useNavigate();
-  const handleRegistration = () => navigate(Registration_Path);
+  const handleRegistration = () => navigate(`/${getCurrentLanguage()}${Registration_Path}`);
 
   const chapters = [
-    { id: 1, title: "Вступ: Мій шлях у програмування" },
-    { id: 2, title: "Розділ 1: Новий ноутбук і перші кроки" },
-    { id: 3, title: "Розділ 2: Перші експерименти та відкриття" },
-    { id: 4, title: "Розділ 3: Повернення до програмування" },
-    { id: 5, title: "Розділ 4: Знайомство з Linux" },
-    { id: 6, title: "Розділ 5: Мій перший серйозний проєкт" },
-    { id: 7, title: "Висновок: Мої підсумки та плани" },
+    { id: 1, title: t('chapter_1_title') },
+    { id: 2, title: t('chapter_2_title') },
+    { id: 3, title: t('chapter_3_title') },
+    { id: 4, title: t('chapter_4_title') },
+    { id: 5, title: t('chapter_5_title') },
+    { id: 6, title: t('chapter_6_title') },
+    { id: 7, title: t('chapter_7_title') },
   ];
 
   const getThemeAssets = (currentTheme: string) => {
@@ -63,7 +67,7 @@ const MainMenu: React.FC = () => {
     return {
       logo: `/assets/icon${themeSuffix}.png`,
       themeIcon: currentTheme === 'light' ? '/assets/night-dark.png' : '/assets/day-light.png',
-      themeAlt: currentTheme === 'light' ? 'Переключити на темну тему' : 'Переключити на світлу тему',
+      themeAlt: currentTheme === 'light' ? t('theme_toggle_light') : t('theme_toggle_dark'),
       introductionProgramming: `/assets/introduction-programming${themeSuffix}.png`,
       firstProjectIdea: `/assets/first-project-idea${themeSuffix}.png`,
       firstProject: `/assets/first-project${themeSuffix}.png`,
@@ -78,10 +82,18 @@ const MainMenu: React.FC = () => {
       phoneIcon: `/assets/phone-icon${themeSuffix}.png`,
       emailIcon: `/assets/email-icon${themeSuffix}.png`,
       websiteIcon: `/assets/website-icon${themeSuffix}.png`,
+      TranslateIcon: `/assets/translate${themeSuffix}.png`,
     };
   };
 
   const themeAssets = getThemeAssets(theme);
+
+  // Language options
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'ru', name: 'Русский' },
+    { code: 'uk', name: 'Українська' },
+  ];
 
   const scrollToChapter = (chapterId: number) => {
     const element = document.getElementById(`chapter-${chapterId}`);
@@ -91,6 +103,15 @@ const MainMenu: React.FC = () => {
       window.scrollTo({ top: elementPosition - headerHeight, behavior: 'smooth' });
     }
     setIsChapterMenuOpen(false);
+  };
+
+  const changeLanguage = (langCode: string) => {
+    i18n.changeLanguage(langCode);
+    localStorage.setItem('selectedLanguage', langCode);
+    setIsLanguageMenuOpen(false);
+    const currentPath = window.location.pathname;
+    const newPath = currentPath.replace(/^\/[a-z]{2}/, `/${langCode}`);
+    navigate(newPath);
   };
 
   const loadUserInfo = async () => {
@@ -106,7 +127,7 @@ const MainMenu: React.FC = () => {
         setIsUserLoggedIn(true);
       }
     } catch (error) {
-      console.error('Помилка при завантаженні інформації про користувача:', error);
+      console.error(t('error_network'), error);
     }
   };
 
@@ -134,6 +155,9 @@ const MainMenu: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsChapterMenuOpen(false);
+      }
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target as Node)) {
+        setIsLanguageMenuOpen(false);
       }
       const accountSection = document.querySelector('.account-section');
       if (accountSection && !accountSection.contains(event.target as Node)) {
@@ -165,7 +189,7 @@ const MainMenu: React.FC = () => {
               setComments(data);
             }
           } catch (error) {
-            console.error('Помилка при оновленні коментарів:', error);
+            console.error(t('error_network'), error);
           }
         }
       }
@@ -176,71 +200,60 @@ const MainMenu: React.FC = () => {
 
   useEffect(() => {
     let animationFrameId: number;
-  
-    // Настройки для каждого id (базовый угол наклона)
+
     const tiltSettings: { [key: string]: { baseMaxAngleX: number; baseMaxAngleY: number } } = {
       chapter1: { baseMaxAngleX: 20, baseMaxAngleY: 20 },
       chapter2: { baseMaxAngleX: 15, baseMaxAngleY: 15 },
       chapter4: { baseMaxAngleX: 25, baseMaxAngleY: 25 },
       chapter5_1: { baseMaxAngleX: 20, baseMaxAngleY: 20 },
-      chapter5_2: { baseMaxAngleX: 30, baseMaxAngleY: 30 }, // Индивидуальные параметры для chapter5_2
+      chapter5_2: { baseMaxAngleX: 30, baseMaxAngleY: 30 },
       chapter6: { baseMaxAngleX: 20, baseMaxAngleY: 20 },
     };
-  
+
     const handleMouseMove = (e: MouseEvent, element: HTMLDivElement) => {
       const updateTransform = () => {
         const rect = element.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-  
+
         const mouseX = e.clientX - centerX;
         const mouseY = e.clientY - centerY;
-  
-        // Получаем id элемента
+
         const elementId = element.id;
-  
-        // Получаем базовые углы для данного id или используем значения по умолчанию
         const { baseMaxAngleX, baseMaxAngleY } =
           tiltSettings[elementId] || { baseMaxAngleX: 20, baseMaxAngleY: 20 };
-  
-        // Динамически масштабируем угол наклона в зависимости от размера изображения
-        // Берем ширину и высоту изображения и масштабируем относительно базового размера (например, 200px)
-        const baseSize = 200; // Базовый размер для расчета коэффициента
-        const sizeFactorX = Math.min(rect.width / baseSize, 2); // Ограничиваем максимальный коэффициент до 2
+
+        const baseSize = 200;
+        const sizeFactorX = Math.min(rect.width / baseSize, 2);
         const sizeFactorY = Math.min(rect.height / baseSize, 2);
-  
-        // Финальные углы с учетом размера
+
         const maxAngleX = baseMaxAngleX * sizeFactorX;
         const maxAngleY = baseMaxAngleY * sizeFactorY;
-  
-        // Нормализация углов на основе размеров элемента
+
         const rotateY = (mouseX / (rect.width / 2)) * maxAngleX;
         const rotateX = -(mouseY / (rect.height / 2)) * maxAngleY;
-  
-        // Применяем трансформацию только если элемент виден и имеет ненулевые размеры
+
         if (rect.width > 0 && rect.height > 0) {
           element.style.transform = `perspective(500px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) scale(1.05)`;
         }
       };
-  
+
       animationFrameId = requestAnimationFrame(updateTransform);
     };
-  
+
     const handleMouseLeave = (element: HTMLDivElement) => {
       cancelAnimationFrame(animationFrameId);
       element.style.transform = 'perspective(500px) rotateY(0deg) rotateX(0deg) scale(1)';
     };
-  
+
     const chapterImages = document.querySelectorAll('.chapterImage');
     chapterImages.forEach((element) => {
       const divElement = element as HTMLDivElement;
       const moveHandler = (e: MouseEvent) => handleMouseMove(e, divElement);
-  
-      // Убедимся, что событие срабатывает на всей области .chapterImage
+
       divElement.addEventListener('mousemove', moveHandler);
       divElement.addEventListener('mouseleave', () => handleMouseLeave(divElement));
-  
-      // Очистка событий при размонтировании
+
       return () => {
         divElement.removeEventListener('mousemove', moveHandler);
         divElement.removeEventListener('mouseleave', () => handleMouseLeave(divElement));
@@ -273,57 +286,60 @@ const MainMenu: React.FC = () => {
   const handleAvatarCrop = async () => {
     const cropperInstance = cropperRef.current?.cropper;
     if (!cropperInstance || !isCropperReady) {
-      console.error('Cropper instance is not available or not ready.');
-      alert('Зачекайте, поки зображення завантажиться і буде готове до обрізки.');
+      console.error(t('error_avatar_crop'));
+      alert(t('error_avatar_crop'));
       return;
     }
 
     try {
-      // Определяем MIME-тип и расширение на основе исходного файла
       const mimeType = avatarFile?.type || 'image/png';
       const extensionMap: { [key: string]: string } = {
         'image/png': 'png',
         'image/jpeg': 'jpg',
         'image/gif': 'gif',
-        'image/webp': 'webp'
+        'image/webp': 'webp',
       };
       const extension = extensionMap[mimeType] || 'png';
 
       cropperInstance.getCroppedCanvas({
         width: 200,
         height: 200,
-      }).toBlob(async (blob) => {
-        if (blob) {
-          const formData = new FormData();
-          formData.append('avatar', blob, `avatar.${extension}`);
-          try {
-            const response = await fetch('/avatar.php', {
-              method: 'POST',
-              body: formData,
-            });
-            if (response.ok) {
-              console.log('Аватар успішно завантажено!');
-              setIsChangeAvatarModalOpen(false);
-              setAvatarFile(null);
-              setIsCropperReady(false);
-              setAvatarSrc('/avatar.php');
-              window.location.reload(); // Перезагрузка страницы после успешной загрузки
-            } else {
-              console.error('Помилка завантаження аватара:', response.status, response.statusText);
-              alert(`Помилка завантаження аватара: ${response.statusText}`);
+      }).toBlob(
+        async (blob) => {
+          if (blob) {
+            const formData = new FormData();
+            formData.append('avatar', blob, `avatar.${extension}`);
+            try {
+              const response = await fetch('/avatar.php', {
+                method: 'POST',
+                body: formData,
+              });
+              if (response.ok) {
+                console.log(t('success_avatar_upload'));
+                setIsChangeAvatarModalOpen(false);
+                setAvatarFile(null);
+                setIsCropperReady(false);
+                setAvatarSrc('/avatar.php');
+                window.location.reload();
+              } else {
+                console.error(t('error_avatar_upload', { statusText: response.statusText }));
+                alert(t('error_avatar_upload', { statusText: response.statusText }));
+              }
+            } catch (error) {
+              console.error(t('error_network'), error);
+              alert(t('error_network'));
             }
-          } catch (error) {
-            console.error('Помилка мережі під час завантаження:', error);
-            alert('Сталася мережева помилка під час завантаження аватара.');
+          } else {
+            console.error(t('error_avatar_blob'));
+            alert(t('error_avatar_blob'));
           }
-        } else {
-          console.error('Не вдалося отримати Blob з обрізаного зображення.');
-          alert('Не вдалося обробити зображення для завантаження.');
-        }
-      }, mimeType, 0.9);
+        },
+        mimeType,
+        0.9
+      );
     } catch (canvasError) {
-      console.error('Помилка при отриманні canvas з Cropper:', canvasError);
-      alert('Виникла помилка при обробці зображення.');
+      console.error(t('error_canvas_crop'), canvasError);
+      alert(t('error_canvas_crop'));
     }
   };
 
@@ -335,7 +351,7 @@ const MainMenu: React.FC = () => {
 
   const handleChangeUsername = async () => {
     if (!newUsername.trim()) {
-      alert('Будь ласка, введіть нове ім’я.');
+      alert(t('error_empty_username'));
       return;
     }
     try {
@@ -345,26 +361,26 @@ const MainMenu: React.FC = () => {
         body: JSON.stringify({ username: newUsername }),
       });
       if (response.ok) {
-        alert('Ім’я успішно змінено!');
+        alert(t('success_username_changed'));
         setIsChangeUsernameModalOpen(false);
         setNewUsername('');
         setUsername(newUsername);
       } else {
-        alert('Помилка при зміні імені.');
+        alert(t('error_change_username'));
       }
     } catch (error) {
-      console.error('Помилка мережі:', error);
-      alert('Сталася мережева помилка.');
+      console.error(t('error_network'), error);
+      alert(t('error_network'));
     }
   };
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      alert('Будь ласка, заповніть усі поля.');
+      alert(t('error_empty_password_fields'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      alert('Нові паролі не збігаються.');
+      alert(t('error_password_mismatch'));
       return;
     }
     try {
@@ -374,17 +390,17 @@ const MainMenu: React.FC = () => {
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       if (response.ok) {
-        alert('Пароль успішно змінено!');
+        alert(t('success_password_changed'));
         setIsChangePasswordModalOpen(false);
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        alert('Помилка при зміні пароля. Перевірте поточний пароль.');
+        alert(t('error_change_password'));
       }
     } catch (error) {
-      console.error('Помилка мережі:', error);
-      alert('Сталася мережева помилка.');
+      console.error(t('error_network'), error);
+      alert(t('error_network'));
     }
   };
 
@@ -398,17 +414,17 @@ const MainMenu: React.FC = () => {
 
       localStorage.clear();
       setIsUserLoggedIn(false);
-      setUsername('Користувач');
+      setUsername(t('account_default_username'));
       setAvatarSrc('assets/default_user_icon.png');
       window.location.reload();
     } catch (error) {
-      console.error('Помилка при виході з системи:', error);
+      console.error(t('error_logout'), error);
     }
   };
 
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) {
-      alert('Будь ласка, введіть коментар.');
+      alert(t('error_empty_comment'));
       return;
     }
     const sanitizedComment = sanitizeHtml(commentText);
@@ -419,14 +435,14 @@ const MainMenu: React.FC = () => {
         body: JSON.stringify({ message: sanitizedComment }),
       });
       if (response.ok) {
-        alert('Коментар успішно відправлено!');
+        alert(t('success_comment_submitted'));
         setCommentText('');
       } else {
-        alert('Помилка при відправленні коментаря.');
+        alert(t('error_comment_submit'));
       }
     } catch (error) {
-      console.error('Помилка мережі:', error);
-      alert('Сталася мережева помилка.');
+      console.error(t('error_network'), error);
+      alert(t('error_network'));
     }
   };
 
@@ -434,24 +450,85 @@ const MainMenu: React.FC = () => {
     <div className="page-container">
       <header className="header">
         <div className="header-left">
-          <img src={themeAssets.logo} alt="Логотип" className="icon-image" />
-          <span className="site-name">ChosenSoul</span>
+          <img src={themeAssets.logo} alt={t('site_name')} className="icon-image" />
+          <span className="site-name">{t('site_name')}</span>
         </div>
         <div className="header-right">
+        <div
+            className={`language-toggle ${isLanguageMenuOpen ? 'active' : ''}`}
+            onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
+            ref={languageMenuRef}
+          >
+            <img
+              src={themeAssets.TranslateIcon}
+              alt={t('language_toggle')}
+              className="language-icon"
+            />
+            <div className={`language-menu ${isLanguageMenuOpen ? 'active' : ''}`}>
+              {languages.map((lang) => (
+                <div
+                  key={lang.code}
+                  className={`language-item ${i18n.language === lang.code ? 'selected' : ''}`}
+                  onClick={() => changeLanguage(lang.code)}
+                >
+                  {lang.name}
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="theme-toggle" onClick={toggleTheme}>
             <img src={themeAssets.themeIcon} alt={themeAssets.themeAlt} className="theme-icon" />
           </div>
-          <div className={`account-section ${isAccountOpen ? 'active' : ''}`} onClick={() => setIsAccountOpen(!isAccountOpen)}>
+          <div
+            className={`account-section ${isAccountOpen ? 'active' : ''}`}
+            onClick={() => setIsAccountOpen(!isAccountOpen)}
+          >
             <div className={`account-frame ${isAccountOpen ? 'active' : ''}`}>
-              <span ref={accountNameRef} className="account-name">{username}</span>
-              <img src={avatarSrc} alt="Обліковий запис" className="account-icon" />
+              <span ref={accountNameRef} className="account-name">
+                {username}
+              </span>
+              <img src={avatarSrc} alt={t('account_alt')} className="account-icon" />
             </div>
             <div className={`account-tooltip ${isAccountOpen ? 'active' : ''}`}>
-              <div className="tooltip-item" onClick={handleRegistration}>Реєстрація</div>
-              <div className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`} onClick={() => { setIsAccountOpen(false); setIsChangeAvatarModalOpen(true); }}>Змінити аватар</div>
-              <div className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`} onClick={() => { setIsAccountOpen(false); setIsChangeUsernameModalOpen(true); }}>Змінити ім'я</div>
-              <div className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`} onClick={() => { setIsAccountOpen(false); setIsChangePasswordModalOpen(true); }}>Змінити пароль</div>
-              <div className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`} onClick={() => { setIsAccountOpen(false); handleLogout(); }}>Вихід</div>
+              <div className="tooltip-item" onClick={handleRegistration}>
+                {t('registration')}
+              </div>
+              <div
+                className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`}
+                onClick={() => {
+                  setIsAccountOpen(false);
+                  setIsChangeAvatarModalOpen(true);
+                }}
+              >
+                {t('change_avatar')}
+              </div>
+              <div
+                className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`}
+                onClick={() => {
+                  setIsAccountOpen(false);
+                  setIsChangeUsernameModalOpen(true);
+                }}
+              >
+                {t('change_username')}
+              </div>
+              <div
+                className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`}
+                onClick={() => {
+                  setIsAccountOpen(false);
+                  setIsChangePasswordModalOpen(true);
+                }}
+              >
+                {t('change_password')}
+              </div>
+              <div
+                className={`tooltip-item ${!isUserLoggedIn ? 'hidden' : ''}`}
+                onClick={() => {
+                  setIsAccountOpen(false);
+                  handleLogout();
+                }}
+              >
+                {t('logout')}
+              </div>
             </div>
           </div>
         </div>
@@ -460,39 +537,59 @@ const MainMenu: React.FC = () => {
       <main className="main-content">
         <div className="content-wrapper">
           <h1 className="main-title">
-            <span className="main-text">Мій шлях у</span>
+            <span className="main-text">{t('main_title_part1')}</span>
             <br />
-            <span className="gradient-text">програмування</span>
+            <span className="gradient-text">{t('main_title_part2')}</span>
           </h1>
           <div className="container-start-menu">
             <p className="shadow"></p>
             <div className="box">
               <div className="block">
-                <img src={themeAssets.introductionProgramming} alt="Знайомство з програмуванням" className="block-image" />
-                <span className="block-text">Як я познайомився з програмуванням</span>
+                <img
+                  src={themeAssets.introductionProgramming}
+                  alt={t('block_introduction')}
+                  className="block-image"
+                />
+                <span className="block-text">{t('block_introduction')}</span>
               </div>
               <div className="block">
-                <img src={themeAssets.firstProjectIdea} alt="Ідея першого проєкту" className="block-image" />
-                <span className="block-text">Ідея першого проєкту</span>
+                <img
+                  src={themeAssets.firstProjectIdea}
+                  alt={t('block_first_project_idea')}
+                  className="block-image"
+                />
+                <span className="block-text">{t('block_first_project_idea')}</span>
               </div>
             </div>
             <div className="box">
               <div className="block">
-                <img src={themeAssets.firstProject} alt="Мій перший проєкт" className="block-image" />
-                <span className="block-text">Мій перший проєкт</span>
+                <img
+                  src={themeAssets.firstProject}
+                  alt={t('block_first_project')}
+                  className="block-image"
+                />
+                <span className="block-text">{t('block_first_project')}</span>
               </div>
               <div className="block">
-                <img src={themeAssets.plansForTheFuture} alt="Плани на майбутнє" className="block-image" />
-                <span className="block-text">Що я планую в майбутньому</span>
+                <img
+                  src={themeAssets.plansForTheFuture}
+                  alt={t('block_future_plans')}
+                  className="block-image"
+                />
+                <span className="block-text">{t('block_future_plans')}</span>
               </div>
             </div>
           </div>
-          <h2 className="roadmap-h2">Дорожня карта</h2>
+          <h2 className="roadmap-h2">{t('roadmap_title')}</h2>
           <div className="roadmap">
             <div className="roadmap-line"></div>
             <div className="roadmap-chapters">
               {chapters.map((chapter) => (
-                <div key={chapter.id} className="chapter-circle" onClick={() => scrollToChapter(chapter.id)}>
+                <div
+                  key={chapter.id}
+                  className="chapter-circle"
+                  onClick={() => scrollToChapter(chapter.id)}
+                >
                   <span className="chapter-tooltip">{chapter.title}</span>
                 </div>
               ))}
@@ -506,92 +603,70 @@ const MainMenu: React.FC = () => {
                 {chapter.id === 1 && (
                   <>
                     <div className="chapterImage" id="chapter1">
-                      <img src="assets/chapter.id1.jpg" alt="Зображення до глави 1" />
+                      <img src="/assets/chapter.id1.jpg" alt={t('chapter_1_title')} />
                     </div>
-                    <p>
-                      Усе почалося в 2023 році, коли мені було 13 років. Я навчався в 7 класі й уперше зіткнувся з програмуванням. Моїм першим завданням стало створення сайту на HTML і CSS — це було домашнє завдання з інформатики. На платформі «Нові знання» (nz.ua) я побачив це завдання, хоча до того моменту нічим подібним не займався. Я уважно читав інструкції, дивився відеоролики на YouTube і почав вивчати структуру HTML-файлу та базові стилі CSS.
-                    </p>
-                    <p>
-                      Було вже 11 годин вечора, але я вирішив узятися до справи. У мене не було відповідних інструментів: я працював на слабкому шкільному Chromebook, на який навіть не можна встановити Windows через шкільні обмеження. Як редактор коду я використовував простий текстовий редактор під назвою Text. У ньому не було підсвітки синтаксису, розширень — лише нумерація рядків. Незважаючи на це, я почав писати код і до 4 години ранку закінчив свій перший сайт. Я навіть не помітив, як промайнув час! Саме тоді я вперше доторкнувся до розробки справжнього проєкту.
-                    </p>
+                    <p>{t('chapter_1_text_1')}</p>
+                    <p>{t('chapter_1_text_2')}</p>
                   </>
                 )}
                 {chapter.id === 2 && (
                   <>
                     <div className="chapterImage" id="chapter2">
-                      <img src="assets/chapter.id2.jpg" alt="Зображення до глави 2" />
+                      <img src="/assets/chapter.id2.jpg" alt={t('chapter_2_title')} />
                     </div>
-                    <p>
-                      Через 7 місяців, у 2023 році, мій тато приніс додому старий ноутбук HP Pavilion dv6 2011 року, який йому віддав знайомий. Це був середньобюджетний ноутбук із процесором Pentium B940, 4 ГБ оперативної пам’яті та двома відеокартами: вбудованою HD2000 і дискретною Radeon HD 6490M. Оскільки я був єдиним у сім’ї, хто хоч трохи розбирався в комп’ютерах, ноутбук дістався мені. На ньому не було операційної системи, і я вирішив установити Windows 7, тому що частина драйверів не підтримувала Windows 10.
-                    </p>
-                    <p>
-                      Я попросив старшого брата записати Windows 7 на флешку, після чого встановив систему й почав користуватися ноутбуком. До цього я вже цікавився «залізом» і знав, як працюють комп’ютери. Уперше я доторкнувся до персонального комп’ютера в 2016 році. Тоді це був старий ноутбук батьків Acer із процесором Pentium (точну модель уже не пам’ятаю). На ньому я грав у Need for Speed: Most Wanted 2005 і годинами намагався пройти першого боса — Сонні. Мамі не подобалося, що я так багато часу проводжу за ноутбуком, і вона часто забороняла мені його використовувати.
-                    </p>
+                    <p>{t('chapter_2_text_1')}</p>
+                    <p>{t('chapter_2_text_2')}</p>
                   </>
                 )}
                 {chapter.id === 3 && (
                   <>
-                    <p>
-                      Згодом я почав експериментувати. Одного разу я встановив на батьківський ноутбук Acer Roblox, але ретельно приховував це від батьків. Я видалив ярлик із робочого стола й прибрав папки Roblox і Roblox Studio з меню «Пуск». Однак я не знав, як видалити програму зі списку в налаштуваннях Windows. Тоді я вперше ввів запит у Google: «Як видалити програму зі списку програм для видалення Windows?» Так я дізнався про реєстр і редактор regedit.
-                    </p>
-                    <p>
-                      Цей момент став для мене відкриттям: я зрозумів, що за простим інтерфейсом комп’ютера ховається набагато більше, ніж бачать звичайні користувачі, яким потрібен лише браузер. Я почав вивчати, як усе працює, і мама, дізнавшись про це, стала давати мені більше часу на експерименти. Тоді я зрозумів, що мені це дійсно подобається.
-                    </p>
+                    <p>{t('chapter_3_text_1')}</p>
+                    <p>{t('chapter_3_text_2')}</p>
                   </>
                 )}
                 {chapter.id === 4 && (
                   <>
                     <div className="chapterImage" id="chapter4">
-                      <img src="assets/chapter.id4.jpg" alt="Зображення до глави 4" />
+                      <img src="/assets/chapter.id4.jpg" alt={t('chapter_4_title')} />
                     </div>
-                    <p>
-                      Повернувшись у 2023 рік, я вирішив спробувати себе в ролі програміста. Мені подобалося створювати щось нове, і я вирішив, що програмування — це моє. У 7 класі я почав вивчати основи: спочатку розібрався, де й що використовується, а потім спробував себе в різних сферах. Але часу катастрофічно не вистачало: я вставав о 9 ранку, уроки тривали до 2 годин дня, а потім ще було багато домашнього завдання.
-                    </p>
-                    <p>
-                      У 2024 році я вирішив зосередитися тільки на інформатиці. Уроки проходили віддалено через Google Meet, і я, відкладавши телефон, читав книги з програмування. Тоді я вирішив вивчати веброзробку, доки не знайду те, що мені по-справжньому цікаво. У процесі я дізнався про рух Open Source, Git, GitHub, IDE та інші важливі терміни.
-                    </p>
+                    <p>{t('chapter_4_text_1')}</p>
+                    <p>{t('chapter_4_text_2')}</p>
                   </>
                 )}
                 {chapter.id === 5 && (
                   <>
                     <div className="chapterImage" id="chapter5_1">
-                      <img src="assets/chapter.id5_1.jpg" alt="Зображення до глави 5_1" />
+                      <img src="/assets/chapter.id5_1.jpg" alt={t('chapter_5_title')} />
                     </div>
-                    <p>
-                      Одного разу я вирішив спробувати одне з головних винаходів Open Source — Linux. Ми з моїм другом Микитою Агашковим сиділи в Discord, і я запропонував експеримент: на 2 тижні перейти на Linux. Микита погодився й запропонував парі: якщо я хоч раз перевстановлю Linux на Windows, він виграє 100 грн. Я записав на флешку образ дистрибутива Ubuntu версії 24.04, але установник підтримував тільки UEFI, а мій старий ноутбук його не підтримував. Тоді я вибрав Ubuntu 22.04 і успішно його встановив. Після цього я зіткнувся з незвичним середовищем GNOME: панель зверху, величезне меню програм замість компактного «Пуску» — усе це нагадувало macOS. Я вирішив дослідити альтернативи, такі як KDE, XFCE, LXDE та інші, і з усіх варіантів мені особливо сподобався KDE. Однак Ubuntu не була оптимізована для зміни робочих середовищ, і встановлення KDE не вдалося. Усе ж я вирішив дати шанс GNOME і звикнути, але через 4 дні зрозумів, що мені незручно.
-                    </p>
-                    <p>
-                      Протягом цих 4 днів мені знадобилися деякі програми Windows, і я встановив Wine — слой сумісності для запуску Windows-програм на Linux. Версія 4.0, стабільна для Ubuntu 22.04, виявилася застарілою (на сайті Wine уже була версія 9.2). Деякі програми не запускалися, і я вирішив спробувати дистрибутив із системою пакетів rolling-release, де всі програми оновлюються до останніх версій.
-                    </p>
+                    <p>{t('chapter_5_text_1')}</p>
+                    <p>{t('chapter_5_text_2')}</p>
                     <div className="chapterImage" id="chapter5_2">
-                      <img src="assets/chapter.id5_2.jpg" alt="Зображення до глави 5_2" />
+                      <img src="/assets/chapter.id5_2.jpg" alt={t('chapter_5_title')} />
                     </div>
-                    <p>
-                      Мій вибір припав на Arch Linux. Багато хто вважає, що його встановлення складне через відсутність графічного інтерфейсу, але для мене воно виявилося простішим, ніж очікувалося. Після тижня налаштування я встановив робоче середовище KDE і необхідні програми: Firefox, Steam, Spotify, Telegram, а також Wine 9.3. Мені знадобився Photoshop CS6 для створення іконок для проєкту, але Adobe не підтримує Linux. За допомогою Wine я запустив Photoshop, і все запрацювало чудово.
-                    </p>
+                    <p>{t('chapter_5_text_3')}</p>
                   </>
                 )}
                 {chapter.id === 6 && (
                   <>
                     <div className="chapterImage" id="chapter6">
-                      <img src="assets/chapter.id6.jpg" alt="Зображення до глави 6" />
+                      <img src="/assets/chapter.id6.jpg" alt={t('chapter_6_title')} />
                     </div>
-                    <p>
-                      У цей же час я вперше встановив IDE — Visual Studio Code, яким користуюся досі, а також GitHub Desktop для роботи з Git. Тоді я почав свій перший серйозний проєкт, який досі є на GitHub <a href="https://github.com/ChosenSoull/MasterSwordOnline">посилання</a>. Я створював його, щоб перевірити, чому навчився за рік — із 2023 по 2024.
-                    </p>
-                    <p>
-                      Проєкт був експериментальним: я кодив по 15 годин на день протягом 30 днів. Але з часом його стало складно розвивати й підтримувати. Я зрозумів, що зробив усе неправильно: потрібно було спочатку продумати архітектуру проєкту, визначити, що я від нього хочу, і як реалізувати ті чи інші функції. У підсумку я призупинив проєкт і почав вивчати, де помилився.
-                    </p>
+                    <p
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(t('chapter_6_text_1')),
+                      }}
+                    ></p>
+                    <p>{t('chapter_6_text_2')}</p>
                   </>
                 )}
                 {chapter.id === 7 && (
                   <>
-                    <p>
-                      З часом я зрозумів, чим хочу займатися — низькорівневим програмуванням на C/C++: розробкою мікроконтролерів для комп’ютерів і різних низькорівневих систем. Тому я не вивчаю інші фреймворки, такі як Vue чи Angular — мені вистачає React.
-                    </p>
-                    <p>
-                      Дякую, що прочитали моє домашнє завдання з інформатики та мою історію про те, як я прийшов до своєї улюбленої справи! Будь ласка, пишіть коментарі, діліться своєю думкою та вказуйте на помилки в <a href="https://github.com/ChosenSoull/My-Informatics-Journal">репозиторії проєкту</a>. Успіхів усім! 😊
-                    </p>
+                    <p>{t('chapter_7_text_1')}</p>
+                    <p
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(t('chapter_7_text_2')),
+                      }}
+                    ></p>
                   </>
                 )}
               </section>
@@ -602,11 +677,11 @@ const MainMenu: React.FC = () => {
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Залиште свій коментар..."
+                    placeholder={t('comment_placeholder')}
                     className="comment-textarea"
                   ></textarea>
                   <button className="comment-button" onClick={handleCommentSubmit}>
-                    Надіслати
+                    {t('comment_submit')}
                   </button>
                 </div>
               ) : null}
@@ -616,7 +691,10 @@ const MainMenu: React.FC = () => {
                     <img src={comment.avatar} alt={comment.name} className="comment-avatar" />
                     <div className="comment-body">
                       <span className="comment-name">{comment.name}</span>
-                      <p className="comment-message" dangerouslySetInnerHTML={{ __html: sanitizeHtml(comment.message) }}></p>
+                      <p
+                        className="comment-message"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(comment.message) }}
+                      ></p>
                     </div>
                   </div>
                 ))}
@@ -660,7 +738,11 @@ const MainMenu: React.FC = () => {
               <a href="https://steamcommunity.com/id/ChosenSoul" target="_blank" rel="noopener noreferrer">
                 <img src={themeAssets.steamIcon} alt="Steam" className="social-icon" />
               </a>
-              <a href="https://discordapp.com/users/912451953106255894" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://discordapp.com/users/912451953106255894"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <img src={themeAssets.discordIcon} alt="Discord" className="social-icon" />
               </a>
               <a href="https://t.me/ChosenS0ul" target="_blank" rel="noopener noreferrer">
@@ -670,12 +752,12 @@ const MainMenu: React.FC = () => {
                 <img src={themeAssets.githubIcon} alt="GitHub" className="social-icon" />
               </a>
             </div>
-            <p className="social-label">Соціальні мережі</p>
+            <p className="social-label">{t('social_label')}</p>
           </div>
           <div className="tech-contact-section">
             <div className="tech-contact-wrapper">
               <div className="tech-section">
-                <p className="tech-label">Використані технології</p>
+                <p className="tech-label">{t('tech_label')}</p>
                 <div className="tech-icons">
                   <a href="https://react.dev/" target="_blank" rel="noopener noreferrer">
                     <img src={themeAssets.reactIcon} alt="React" className="tech-icon" />
@@ -683,27 +765,44 @@ const MainMenu: React.FC = () => {
                   <a href="https://vite.dev/" target="_blank" rel="noopener noreferrer">
                     <img src={themeAssets.viteIcon} alt="Vite" className="tech-icon" />
                   </a>
-                  <a href="https://www.typescriptlang.org/docs/" target="_blank" rel="noopener noreferrer">
+                  <a
+                    href="https://www.typescriptlang.org/docs/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <img src={themeAssets.typescriptIcon} alt="TypeScript" className="tech-icon" />
                   </a>
                 </div>
               </div>
               <div className="contact-section">
                 <div className="contact-info">
-                  <img src={themeAssets.phoneIcon} alt="Телефон" className="contact-icon" />
+                  <img src={themeAssets.phoneIcon} alt={t('phone_label')} className="contact-icon" />
                   <span className="contact-text">+38 (066) 993-20-87</span>
                 </div>
                 <div className="contact-info">
-                  <img src={themeAssets.emailIcon} alt="Електронна пошта" className="contact-icon" />
-                  <a href="mailto:chosensouldev@gmail.com" className="contact-text">chosensouldev@gmail.com</a>
+                  <img src={themeAssets.emailIcon} alt={t('email_label')} className="contact-icon" />
+                  <a href="mailto:chosensouldev@gmail.com" className="contact-text">
+                    chosensouldev@gmail.com
+                  </a>
                 </div>
                 <div className="contact-info">
-                  <img src={themeAssets.websiteIcon} alt="Вебсайт" className="contact-icon" />
-                  <a href="https://chosensoul.kesug.com" target="_blank" rel="noopener noreferrer" className="contact-text">chosensoul.kesug.com</a>
+                  <img
+                    src={themeAssets.websiteIcon}
+                    alt={t('website_label')}
+                    className="contact-icon"
+                  />
+                  <a
+                    href="https://chosensoul.kesug.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="contact-text"
+                  >
+                    chosensoul.kesug.com
+                  </a>
                 </div>
               </div>
             </div>
-            <p className="copyright">@Copyright 2025 ChosenSoul усі права захищені ліцензією GPL 3</p>
+            <p className="copyright">{t('copyright')}</p>
           </div>
         </div>
       </footer>
@@ -711,11 +810,17 @@ const MainMenu: React.FC = () => {
       {isChangeAvatarModalOpen && (
         <div className="modal-overlay" onClick={handleCloseAvatarModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">Змінити аватар</h3>
+            <h3 className="modal-title">{t('avatar_modal_title')}</h3>
             <label htmlFor="avatar-input" className="custom-file-button">
-              {avatarFile ? 'Вибрати інше зображення' : 'Вибрати зображення'}
+              {avatarFile ? t('avatar_select_another_image') : t('avatar_select_image')}
             </label>
-            <input id="avatar-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={handleAvatarChange} className="file-input" />
+            <input
+              id="avatar-input"
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              onChange={handleAvatarChange}
+              className="file-input"
+            />
             {avatarFile && (
               <div className="cropper-container">
                 <Cropper
@@ -733,11 +838,15 @@ const MainMenu: React.FC = () => {
               </div>
             )}
             <div className="modal-actions">
-              <button className="modal-button modal-button-save" onClick={handleAvatarCrop} disabled={!isCropperReady || !avatarFile}>
-                Завантажити
+              <button
+                className="modal-button modal-button-save"
+                onClick={handleAvatarCrop}
+                disabled={!isCropperReady || !avatarFile}
+              >
+                {t('avatar_upload')}
               </button>
               <button className="modal-button modal-button-cancel" onClick={handleCloseAvatarModal}>
-                Скасувати
+                {t('avatar_cancel')}
               </button>
             </div>
           </div>
@@ -745,24 +854,33 @@ const MainMenu: React.FC = () => {
       )}
 
       {isChangeUsernameModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsChangeUsernameModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setIsChangeUsernameModalOpen(false)}
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">Змінити ім’я</h3>
+            <h3 className="modal-title">{t('username_modal_title')}</h3>
             <div className="modal-input-container">
               <input
                 type="text"
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
-                placeholder="Нове ім’я"
+                placeholder={t('username_placeholder')}
                 className="modal-input"
               />
             </div>
             <div className="modal-actions">
-              <button className="modal-button modal-button-save" onClick={handleChangeUsername}>
-                Змінити ім’я
+              <button
+                className="modal-button modal-button-save"
+                onClick={handleChangeUsername}
+              >
+                {t('username_save')}
               </button>
-              <button className="modal-button modal-button-cancel" onClick={() => setIsChangeUsernameModalOpen(false)}>
-                Відклонити
+              <button
+                className="modal-button modal-button-cancel"
+                onClick={() => setIsChangeUsernameModalOpen(false)}
+              >
+                {t('username_cancel')}
               </button>
             </div>
           </div>
@@ -770,38 +888,47 @@ const MainMenu: React.FC = () => {
       )}
 
       {isChangePasswordModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsChangePasswordModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setIsChangePasswordModalOpen(false)}
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">Змінити пароль</h3>
+            <h3 className="modal-title">{t('password_modal_title')}</h3>
             <div className="modal-password-fields">
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Поточний пароль"
+                placeholder={t('password_current_placeholder')}
                 className="modal-input"
               />
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Новий пароль"
+                placeholder={t('password_new_placeholder')}
                 className="modal-input"
               />
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Повторити пароль"
+                placeholder={t('password_confirm_placeholder')}
                 className="modal-input"
               />
             </div>
             <div className="modal-actions">
-              <button className="modal-button modal-button-save" onClick={handleChangePassword}>
-                Змінити пароль
+              <button
+                className="modal-button modal-button-save"
+                onClick={handleChangePassword}
+              >
+                {t('password_save')}
               </button>
-              <button className="modal-button modal-button-cancel" onClick={() => setIsChangePasswordModalOpen(false)}>
-                Відклонити
+              <button
+                className="modal-button modal-button-cancel"
+                onClick={() => setIsChangePasswordModalOpen(false)}
+              >
+                {t('password_cancel')}
               </button>
             </div>
           </div>

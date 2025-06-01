@@ -19,8 +19,10 @@ import React, { useState, useContext, useEffect } from 'react';
 import { ThemeContext } from '../theme';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './Registration.css';
 import sanitizeHtml from 'sanitize-html';
+import { getCurrentLanguage } from '../../../i18n';
 
 interface GoogleUser {
   name: string;
@@ -29,6 +31,7 @@ interface GoogleUser {
 }
 
 const Registration: React.FC = () => {
+  const { t } = useTranslation();
   const { theme } = useContext(ThemeContext);
   const navigate = useNavigate();
 
@@ -48,11 +51,11 @@ const Registration: React.FC = () => {
 
   const checkPasswordStrength = (pass: string) => {
     if (pass.length === 0) return '';
-    if (pass.length < 8) return 'Слабкий (мінімум 8 символів)';
-    if (!/[A-Z]/.test(pass)) return 'Середній (потрібна велика літера)';
-    if (!/[0-9]/.test(pass)) return 'Сильний (потрібна цифра)';
-    if (!/[!@#$%^&*]/.test(pass)) return 'Сильний (потрібен спецсимвол)';
-    return 'Дуже сильний';
+    if (pass.length < 8) return t('weak_password-registration');
+    if (!/[A-Z]/.test(pass)) return t('medium_password-registration');
+    if (!/[0-9]/.test(pass)) return t('strong_password_number-registration');
+    if (!/[!@#$%^&*]/.test(pass)) return t('strong_password_special-registration');
+    return t('very_strong_password-registration');
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,31 +102,31 @@ const Registration: React.FC = () => {
 
   const handleRegister = async () => {
     if (name.length === 0 || password.length === 0 || email.length === 0 || confirmPassword.length === 0) {
-      setError('Усі поля повинні бути заповнені!');
+      setError(t('all_fields_required-registration'));
       return;
     }
     if (name.length > 255) {
-      setError('Ім’я не може перевищувати 255 символів!');
+      setError(t('name_too_long-registration'));
       return;
     }
     if (email.length > 255) {
-      setError('Електронна пошта не може перевищувати 255 символів!');
+      setError(t('email_too_long-registration'));
       return;
     }
     if (password.length > 255) {
-      setError('Пароль не може перевищувати 255 символів!');
+      setError(t('password_too_long-registration'));
       return;
     }
     if (password.length < 8) {
-      setError('Пароль повинен містити щонайменше 8 символів!');
+      setError(t('password_too_short-registration'));
       return;
     }
     if (password !== confirmPassword) {
-      setError('Паролі не збігаються!');
+      setError(t('passwords_do_not_match-registration'));
       return;
     }
     if (!isValidEmail(email)) {
-      setError('Невірний формат email!');
+      setError(t('invalid_email_format-registration'));
       return;
     }
 
@@ -140,13 +143,13 @@ const Registration: React.FC = () => {
           setIsCodeStage(true);
           setError('');
         } else {
-          setError(data.message || 'Помилка на сервері. Спробуйте ще раз.');
+          setError(data.message || t('server_error-registration'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-registration'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
+      setError(t('no_server_connection-registration'));
     }
   };
 
@@ -169,7 +172,7 @@ const Registration: React.FC = () => {
   const handleCodeSubmit = async () => {
     const codeString = code.join('');
     if (codeString.length !== 6) {
-      setError('Введіть 6-значний код');
+      setError(t('enter_six_digit_code-registration'));
       return;
     }
 
@@ -185,28 +188,28 @@ const Registration: React.FC = () => {
         if (data.status === 'verified') {
           navigate('/');
         } else {
-          setError(data.message || 'Невірний код підтвердження');
+          setError(data.message || t('invalid_verification_code-registration'));
           setCode(['', '', '', '', '', '']);
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-registration'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
+      setError(t('no_server_connection-registration'));
     }
   };
 
   const handleResendCode = async () => {
     if (!email) {
-      setError('Електронна пошта повинна бути заповнена!');
+      setError(t('email_required-registration'));
       return;
     }
     if (email.length > 255) {
-      setError('Електронна пошта не може перевищувати 255 символів!');
+      setError(t('email_too_long-registration'));
       return;
     }
     if (!isValidEmail(email)) {
-      setError('Невірний формат email!');
+      setError(t('invalid_email_format-registration'));
       return;
     }
 
@@ -224,32 +227,32 @@ const Registration: React.FC = () => {
           setError('');
           setCode(['', '', '', '', '', '']);
         } else {
-          setError(data.message || 'Не вдалося надіслати код повторно');
+          setError(data.message || t('resend_code_failed-registration'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-registration'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка при повторному надсиланні:', error);
+      setError(t('no_server_connection-registration'));
+      console.error(t('resend_error_console-registration'), error);
     }
   };
 
   const handleGoogleSubmit = async () => {
     if (!googleAccessToken) {
-      setError('Спочатку увійдіть через Google');
+      setError(t('google_login_required-registration'));
       return;
     }
     if (!googlePassword) {
-      setError('Введіть пароль');
+      setError(t('password_required-registration'));
       return;
     }
     if (googlePassword.length < 8) {
-      setError('Пароль повинен містити щонайменше 8 символів!');
+      setError(t('password_too_short-registration'));
       return;
     }
     if (googlePassword.length > 255) {
-      setError('Пароль не може перевищувати 255 символів!');
+      setError(t('password_too_long-registration'));
       return;
     }
 
@@ -265,14 +268,14 @@ const Registration: React.FC = () => {
         if (data.status === 'ok') {
           navigate('/');
         } else {
-          setError(data.message || 'Помилка на сервері. Спробуйте ще раз.');
+          setError(data.message || t('server_error-registration'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-registration'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
+      setError(t('no_server_connection-registration'));
+      console.error(t('network_error_console-registration'), error);
     }
   };
 
@@ -290,11 +293,11 @@ const Registration: React.FC = () => {
           setError('');
         })
         .catch(() => {
-          setError('Помилка при отриманні даних користувача');
+          setError(t('google_user_info_error-registration'));
         });
     },
     onError: () => {
-      setError('Помилка авторизації через Google');
+      setError(t('google_auth_error-registration'));
     },
     scope: 'profile email',
   });
@@ -314,25 +317,25 @@ const Registration: React.FC = () => {
         <div className="form-container">
           {!isCodeStage ? (
             <>
-              <h2>Реєстрація</h2>
+              <h2>{t('registration_title-registration')}</h2>
               <div className="google-auth-container">
                 <button className="google-login" onClick={() => login()}>
                   <img
                     src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
-                    alt="Google icon"
+                    alt={t('google_icon_alt-registration')}
                     className="google-icon"
                   />
-                  Реєстрація за допомогою Google
+                  {t('google_registration-registration')}
                 </button>
                 {googleUser && (
                   <div className="google-user-info">
-                    <img src={googleUser.picture} alt="Profile" className="profile-picture" />
-                    <p>Ім'я: {googleUser.name}</p>
-                    <p>Email: {googleUser.email}</p>
+                    <img src={googleUser.picture} alt={t('profile_picture_alt-registration')} className="profile-picture" />
+                    <p>{t('name_label-registration')}: {googleUser.name}</p>
+                    <p>{t('email_label-registration')}: {googleUser.email}</p>
                     <div className="form-group">
                       <input
                         type="password"
-                        placeholder="Введіть пароль для акаунта"
+                        placeholder={t('enter_password_placeholder-registration')}
                         value={googlePassword}
                         onChange={(e) => setGooglePassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                         className="input-field"
@@ -340,7 +343,7 @@ const Registration: React.FC = () => {
                     </div>
                     {error && <div className="error-message">{error}</div>}
                     <button className="register-button" onClick={handleGoogleSubmit}>
-                      Продовжити
+                      {t('continue_button-registration')}
                     </button>
                   </div>
                 )}
@@ -350,7 +353,7 @@ const Registration: React.FC = () => {
                   <div className="form-group">
                     <input
                       type="email"
-                      placeholder="Електронна пошта"
+                      placeholder={t('email_placeholder-registration')}
                       value={email}
                       onChange={handleEmailChange}
                       className="input-field"
@@ -359,7 +362,7 @@ const Registration: React.FC = () => {
                   <div className="form-group">
                     <input
                       type="text"
-                      placeholder="Ім'я"
+                      placeholder={t('name_placeholder-registration')}
                       value={name}
                       onChange={handleNameChange}
                       className="input-field"
@@ -369,7 +372,7 @@ const Registration: React.FC = () => {
                   <div className="form-group">
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Пароль"
+                      placeholder={t('password_placeholder-registration')}
                       value={password}
                       onChange={handlePasswordChange}
                       className="input-field"
@@ -378,7 +381,7 @@ const Registration: React.FC = () => {
                     {password.length > 0 && (
                       <img
                         src={passwordIconSrc}
-                        alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                        alt={showPassword ? t('hide_password_alt-registration') : t('show_password_alt-registration')}
                         className="password-toggle"
                         onClick={togglePasswordVisibility}
                       />
@@ -388,7 +391,7 @@ const Registration: React.FC = () => {
                   <div className="form-group">
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Повторити пароль"
+                      placeholder={t('confirm_password_placeholder-registration')}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                       className="input-field"
@@ -400,25 +403,25 @@ const Registration: React.FC = () => {
               {error && !googleUser && <div className="error-message">{error}</div>}
               {!googleUser && (
                 <button className="register-button" onClick={handleRegister}>
-                  Зареєструватися
+                  {t('register_button-registration')}
                 </button>
               )}
               <div className="navigation-links">
-                <span onClick={() => navigate('/login')} className="navigation-link">
-                  Вхід
+                <span onClick={() => navigate(`/${getCurrentLanguage()}/login`)} className="navigation-link">
+                  {t('login_link-registration')}
                 </span>
-                <span onClick={() => navigate('/')} className="navigation-link">
-                  Головна сторінка
+                <span onClick={() => navigate(`/${getCurrentLanguage()}/`)} className="navigation-link">
+                  {t('home_link-registration')}
                 </span>
-                <span onClick={() => navigate('/forgot-password')} className="navigation-link">
-                  Забули пароль?
+                <span onClick={() => navigate(`/${getCurrentLanguage()}/forgot-password`)} className="navigation-link">
+                  {t('forgot_password_link-registration')}
                 </span>
               </div>
             </>
           ) : (
             <div className="code-container">
-              <h2>Підтвердження коду</h2>
-              <p>Введіть 6-значний код, відправлений на {email}</p>
+              <h2>{t('code_verification_title-registration')}</h2>
+              <p>{t('enter_code_message-registration', { email })}</p>
               <div className="code-inputs">
                 {code.map((digit, index) => (
                   <input
@@ -435,7 +438,7 @@ const Registration: React.FC = () => {
               </div>
               {error && <div className="error-message">{error}</div>}
               <button className="verify-button" onClick={handleCodeSubmit}>
-                Підтвердити
+                {t('verify_button-registration')}
               </button>
               <button
                 className="resend-button"
@@ -443,8 +446,8 @@ const Registration: React.FC = () => {
                 disabled={resendCooldown > 0}
               >
                 {resendCooldown > 0
-                  ? `Надіслати повторно через ${resendCooldown} сек`
-                  : 'Надіслати код повторно'}
+                  ? t('resend_code_cooldown-registration', { seconds: resendCooldown })
+                  : t('resend_code_button-registration')}
               </button>
             </div>
           )}

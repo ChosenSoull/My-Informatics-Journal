@@ -592,11 +592,16 @@
   background-color: transparent;
   min-height: 350px;
   max-height: 350px;
+  overflow: auto;
 }
 
 .comment-input-area {
   display: flex;
   margin-bottom: 15px;
+  position: sticky;
+  top: 0;
+  background-color: inherit;
+  z-index: 1;
 }
 
 .comment-textarea {
@@ -607,7 +612,7 @@
   border: 2px solid var(--text-input-border);
   border-radius: 25px;
   margin-right: 10px;
-  background-color: transparent;
+  background-color: var(--background-color);
   color: var(--text-color);
   resize: vertical;
   min-height: 40px;
@@ -915,6 +920,68 @@
   content: "";
   display: table;
   clear: both;
+}
+
+.language-toggle {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--background-secondary);
+  transition: background-color 0.3s ease;
+}
+
+.language-toggle:hover {
+  background-color: var(--background-hover);
+}
+
+.language-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.language-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background-color: var(--chapter-menu-bg-color);
+  color: var(--text-color);
+  padding: 0.5rem 0;
+  border: 2px solid var(--chapter-menu-bor-color);
+  z-index: 1000;
+  border-radius: 10px;
+  min-width: 120px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+
+.language-menu.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.language-item {
+  padding: 10px 15px;
+  color: var(--text-color);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.language-item:hover {
+  background-color: var(--background-hover);
+}
+
+.language-item.selected {
+  background-color: var(--background-accent);
+  font-weight: bold;
 }
 
 @media (max-width: 767px) {

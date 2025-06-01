@@ -40,7 +40,7 @@ if (file_exists($cleanupScriptPath)) {
 
 $cacheDir = __DIR__ . '/cache';
 $cacheFile = $cacheDir . '/comments_cache.json';
-$cacheTTL = 120; // 2 хвилини
+$cacheTTL = 15; // 15 секунд 
 
 if (!file_exists($cacheDir)) {
     mkdir($cacheDir, 0755, true);

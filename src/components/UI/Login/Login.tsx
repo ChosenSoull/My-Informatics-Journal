@@ -19,14 +19,17 @@ import React, { useState, useContext, useEffect } from 'react';
 import { ThemeContext } from '../theme';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './Login.css';
 import sanitizeHtml from 'sanitize-html';
+import { getCurrentLanguage } from '../../../i18n';
 
 interface GoogleUser {
   email: string;
 }
 
 const Login: React.FC = () => {
+  const { t } = useTranslation();
   const { theme } = useContext(ThemeContext);
   const navigate = useNavigate();
 
@@ -62,15 +65,15 @@ const Login: React.FC = () => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setError('Усі поля повинні бути заповнені!');
+      setError(t('all_fields_required-login'));
       return;
     }
     if (email.length > 255) {
-      setError('Електронна пошта не може перевищувати 255 символів!');
+      setError(t('email_too_long-login'));
       return;
     }
     if (password.length > 255) {
-      setError('Пароль не може перевищувати 255 символів!');
+      setError(t('password_too_long-login'));
       return;
     }
 
@@ -87,14 +90,14 @@ const Login: React.FC = () => {
           setIsCodeStage(true);
           setError('');
         } else {
-          setError(data.message || 'Помилка входу');
+          setError(data.message || t('login_error-login'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-login'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
+      setError(t('no_server_connection-login'));
+      console.error(t('network_error_console-login'), error);
     }
   };
 
@@ -117,7 +120,7 @@ const Login: React.FC = () => {
   const handleCodeSubmit = async () => {
     const codeString = code.join('');
     if (codeString.length !== 6) {
-      setError('Введіть 6-значний код');
+      setError(t('enter_six_digit_code-login'));
       return;
     }
 
@@ -133,24 +136,24 @@ const Login: React.FC = () => {
         if (data.status === 'verified') {
           navigate('/');
         } else {
-          setError(data.message || 'Невірний код підтвердження');
+          setError(data.message || t('invalid_verification_code-login'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-login'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
+      setError(t('no_server_connection-login'));
+      console.error(t('network_error_console-login'), error);
     }
   };
 
   const handleResendCode = async () => {
     if (!email) {
-      setError('Електронна пошта повинна бути заповнена!');
+      setError(t('email_required-login'));
       return;
     }
     if (email.length > 255) {
-      setError('Електронна пошта не може перевищувати 255 символів!');
+      setError(t('email_too_long-login'));
       return;
     }
 
@@ -168,20 +171,20 @@ const Login: React.FC = () => {
           setError('');
           setCode(['', '', '', '', '', '']);
         } else {
-          setError(data.message || 'Не вдалося надіслати код повторно');
+          setError(data.message || t('resend_code_failed-login'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-login'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка при повторному надсиланні:', error);
+      setError(t('no_server_connection-login'));
+      console.error(t('resend_error_console-login'), error);
     }
   };
 
   const handleGoogleLogin = async () => {
     if (!googleAccessToken) {
-      setError('Спочатку увійдіть через Google');
+      setError(t('google_login_required-login'));
       return;
     }
 
@@ -197,14 +200,14 @@ const Login: React.FC = () => {
         if (data.status === 'ok') {
           navigate('/');
         } else {
-          setError(data.message || 'Помилка входу');
+          setError(data.message || t('login_error-login'));
         }
       } else {
-        setError('Немає зв’язку з сервером');
+        setError(t('no_server_connection-login'));
       }
     } catch (error) {
-      setError('Немає зв’язку з сервером');
-      console.error('Помилка мережі:', error);
+      setError(t('no_server_connection-login'));
+      console.error(t('network_error_console-login'), error);
     }
   };
 
@@ -223,12 +226,12 @@ const Login: React.FC = () => {
           setError('');
         })
         .catch((error) => {
-          setError('Помилка при отриманні даних користувача');
-          console.error('Помилка:', error);
+          setError(t('google_user_info_error-login'));
+          console.error(t('error_console-login'), error);
         });
     },
     onError: () => {
-      setError('Помилка авторизації через Google');
+      setError(t('google_auth_error-login'));
     },
     scope: 'email',
   });
@@ -246,22 +249,22 @@ const Login: React.FC = () => {
     <div className="container-login" style={{ backgroundImage: `url('${containerBackground}')` }}>
       <div className="position-container-login">
         <div className="form-container-login">
-          {!isCodeStage && <h2>Вхід</h2>}
+          {!isCodeStage && <h2>{t('login_title-login')}</h2>}
           {!isCodeStage && (
             <button className="google-login_login" onClick={() => login()}>
               <img
                 src={theme === 'light' ? '/assets/google-dark-icon.png' : '/assets/google-white-icon.png'}
-                alt="Google icon"
+                alt={t('google_icon_alt-login')}
                 className="google-icon"
               />
-              Увійти за допомогою Google
+              {t('google_login-login')}
             </button>
           )}
           {googleUser && !isCodeStage && (
             <div className="google-user-info">
               {error && <div className="error-message">{error}</div>}
               <button className="login-button" onClick={handleGoogleLogin}>
-                Увійти
+                {t('login_button-login')}
               </button>
             </div>
           )}
@@ -270,7 +273,7 @@ const Login: React.FC = () => {
               <div className="form-group">
                 <input
                   type="email"
-                  placeholder="Електронна пошта"
+                  placeholder={t('email_placeholder-login')}
                   value={email}
                   onChange={(e) => setEmail(sanitizeHtml(e.target.value, { allowedTags: [], allowedAttributes: {} }))}
                   className="input-field"
@@ -279,7 +282,7 @@ const Login: React.FC = () => {
               <div className="form-group">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Пароль"
+                  placeholder={t('password_placeholder-login')}
                   value={password}
                   onChange={handlePasswordChange}
                   className="input-field"
@@ -287,7 +290,7 @@ const Login: React.FC = () => {
                 {password.length > 0 && (
                   <img
                     src={passwordIconSrc}
-                    alt={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                    alt={showPassword ? t('hide_password_alt-login') : t('show_password_alt-login')}
                     className="password-toggle"
                     onClick={togglePasswordVisibility}
                   />
@@ -295,14 +298,14 @@ const Login: React.FC = () => {
               </div>
               {error && <div className="error-message">{error}</div>}
               <button className="login-button" onClick={handleLogin}>
-                Увійти
+                {t('login_button-login')}
               </button>
             </>
           )}
           {isCodeStage && (
             <div className="code-container">
-              <h2>Підтвердження коду</h2>
-              <p>Введіть 6-значний код, відправлений на {email}</p>
+              <h2>{t('code_verification_title-login')}</h2>
+              <p>{t('enter_code_message-login', { email })}</p>
               <div className="code-inputs">
                 {code.map((digit, index) => (
                   <input
@@ -319,7 +322,7 @@ const Login: React.FC = () => {
               </div>
               {error && <div className="error-message">{error}</div>}
               <button className="verify-button" onClick={handleCodeSubmit}>
-                Підтвердити
+                {t('verify_button-login')}
               </button>
               <button
                 className="resend-button"
@@ -327,20 +330,20 @@ const Login: React.FC = () => {
                 disabled={resendCooldown > 0}
               >
                 {resendCooldown > 0
-                  ? `Надіслати повторно через ${resendCooldown} сек`
-                  : 'Надіслати код повторно'}
+                  ? t('resend_code_cooldown-login', { seconds: resendCooldown })
+                  : t('resend_code_button-login')}
               </button>
             </div>
           )}
           <div className="navigation-links">
-            <span onClick={() => navigate('/registration')} className="navigation-link">
-              Реєстрація
+            <span onClick={() => navigate(`/${getCurrentLanguage()}/registration`)} className="navigation-link">
+              {t('registration_link-login')}
             </span>
-            <span onClick={() => navigate('/')} className="navigation-link">
-              Головна сторінка
+            <span onClick={() => navigate(`/${getCurrentLanguage()}/`)} className="navigation-link">
+              {t('home_link-login')}
             </span>
-            <span onClick={() => navigate('/forgot-password')} className="navigation-link">
-              Забули пароль?
+            <span onClick={() => navigate(`/${getCurrentLanguage()}/forgot-password`)} className="navigation-link">
+              {t('forgot_password_link-login')}
             </span>
           </div>
         </div>
